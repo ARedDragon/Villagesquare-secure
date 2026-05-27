@@ -109,33 +109,7 @@ function hashPin(pin) {
 }
 
 // ── Collectables: physical item definitions ──────────────────────────────────────
-const CARDS = [
-  // Common
-  { id: "copper_coin",     name: "Copper Coin",      rarity: "Common",    emoji: "🪙", desc: "A worn copper coin. Worth little, but it's a start." },
-  { id: "pebble",          name: "Smooth Pebble",    rarity: "Common",    emoji: "🪨", desc: "Polished by a river over thousands of years." },
-  { id: "stick",           name: "Wooden Stick",     rarity: "Common",    emoji: "🪵", desc: "A sturdy branch. Every adventure starts here." },
-  { id: "iron_nail",       name: "Iron Nail",        rarity: "Common",    emoji: "📌", desc: "Sharp and reliable. Holds things together." },
-  { id: "fish",            name: "Raw Fish",         rarity: "Common",    emoji: "🐟", desc: "Freshly caught. Smells like the sea." },
-  // Uncommon
-  { id: "silver_coin",     name: "Silver Coin",      rarity: "Uncommon",  emoji: "🪙", desc: "Stamped with an unknown crest. Worth more than copper." },
-  { id: "iron_ore",        name: "Iron Ore",         rarity: "Uncommon",  emoji: "⛏️", desc: "Raw ore pulled from deep underground." },
-  { id: "amethyst",        name: "Amethyst Shard",   rarity: "Uncommon",  emoji: "💜", desc: "A jagged purple crystal with a faint glow." },
-  { id: "treasure_map",    name: "Treasure Map",     rarity: "Uncommon",  emoji: "🗺️", desc: "Half a map torn at the fold. Where does X mark?" },
-  { id: "antique_watch",   name: "Antique Watch",    rarity: "Uncommon",  emoji: "⌚", desc: "Stopped at midnight. Still ticking somehow." },
-  // Rare
-  { id: "gold_bar",        name: "Gold Bar",         rarity: "Rare",      emoji: "🏅", desc: "Pure gold, stamped and certified. Heavy." },
-  { id: "diamond",         name: "Raw Diamond",      rarity: "Rare",      emoji: "💎", desc: "Uncut and rough, yet unmistakably brilliant." },
-  { id: "ancient_coin",    name: "Ancient Coin",     rarity: "Rare",      emoji: "🪙", desc: "Minted by a long-forgotten empire. Priceless to collectors." },
-  { id: "katana",          name: "Iron Katana",      rarity: "Rare",      emoji: "⚔️", desc: "Hand-forged blade. Balanced perfectly." },
-  // Epic
-  { id: "ruby_gem",        name: "Ruby Gemstone",    rarity: "Epic",      emoji: "❤️‍🔥", desc: "Blazing red. Rumoured to hold warmth even in winter." },
-  { id: "dragon_scale",    name: "Dragon Scale",     rarity: "Epic",      emoji: "🐉", desc: "Shed from a real dragon. Stronger than steel." },
-  { id: "enchanted_ring",  name: "Enchanted Ring",   rarity: "Epic",      emoji: "💍", desc: "Hums faintly when worn. Nobody knows why." },
-  // Legendary
-  { id: "philosophers_stone", name: "Philosopher's Stone", rarity: "Legendary", emoji: "🔮", desc: "Turns base metals to gold. Handle with care." },
-  { id: "crown_jewel",     name: "Crown Jewel",      rarity: "Legendary", emoji: "👑", desc: "The centrepiece of a royal crown. One of a kind." },
-  { id: "void_crystal",    name: "Void Crystal",     rarity: "Legendary", emoji: "🌑", desc: "Absorbs all light around it. Origin: unknown." },
-];
+const CARDS = [];
 
 const CARD_MAP = Object.fromEntries(CARDS.map((c) => [c.id, c]));
 
@@ -337,6 +311,15 @@ io.on("connection", (socket) => {
       });
       return;
     }
+
+    // Global login whitelist check (admin handle is always allowed)
+    if (name !== ADMIN_HANDLE && !store.isJoinWhitelisted(name)) {
+      socket.emit("register-error", {
+        message: `@${name} is not whitelisted yet. Ask an admin to approve your handle.`,
+      });
+      return;
+    }
+
     if (isNameTaken(name, socket.id)) {
       socket.emit("register-error", {
         message: `"${name}" is already online. Pick another handle.`,
@@ -430,6 +413,47 @@ io.on("connection", (socket) => {
       messages: store.getMessages(channelId),
       label: channelLabel(channelId, socket.username),
     });
+  });
+
+  // Admin: manage global join whitelist
+  socket.on("admin-get-join-whitelist", () => {
+    if (!socket.username || socket.username !== ADMIN_HANDLE) return;
+    socket.emit("admin-join-whitelist", store.getJoinWhitelist());
+  });
+
+  socket.on("admin-add-join-whitelist", ({ handle }) => {
+    if (!socket.username || socket.username !== ADMIN_HANDLE) return;
+    const target = sanitizeName(handle);
+    if (!target) {
+      socket.emit("admin-action-result", { ok: false, message: "Invalid handle (2-20 chars)." });
+      return;
+    }
+    if (!store.addJoinWhitelist(target)) {
+      socket.emit("admin-action-result", { ok: false, message: `@${target} is already whitelisted.` });
+      return;
+    }
+    socket.emit("admin-action-result", { ok: true, message: `@${target} added to whitelist.` });
+    socket.emit("admin-join-whitelist", store.getJoinWhitelist());
+  });
+
+  socket.on("admin-remove-join-whitelist", ({ handle }) => {
+    if (!socket.username || socket.username !== ADMIN_HANDLE) return;
+    const target = sanitizeName(handle);
+    if (!target) {
+      socket.emit("admin-action-result", { ok: false, message: "Invalid handle." });
+      return;
+    }
+    if (target === ADMIN_HANDLE) {
+      socket.emit("admin-action-result", { ok: false, message: "Cannot remove the admin handle." });
+      socket.emit("admin-join-whitelist", store.getJoinWhitelist());
+      return;
+    }
+    if (!store.removeJoinWhitelist(target)) {
+      socket.emit("admin-action-result", { ok: false, message: `@${target} is not in whitelist.` });
+      return;
+    }
+    socket.emit("admin-action-result", { ok: true, message: `@${target} removed from whitelist.` });
+    socket.emit("admin-join-whitelist", store.getJoinWhitelist());
   });
 
   // Admin: give tokens to any user (from thin air, not admin’s balance)

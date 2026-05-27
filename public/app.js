@@ -157,6 +157,7 @@ const _pageLoadTime = Date.now(); // used to ensure loading animation finishes b
 let wagerAmount = 0;
 let pendingNicknameTarget = null;
 let nicknames = JSON.parse(localStorage.getItem("villagesquare-nicknames") || "{}");
+let adminJoinWhitelist = [];
 
 // ── Join Whitelist ─────────────────────────────────────────────────────────────
 // Handles in this array can never be removed via the admin panel.
@@ -1240,12 +1241,6 @@ async function connect() {
   const rawPwForDisplay = pinInput ? pinInput.value : "";
   showLoginInfo(name, rawPwForDisplay);
 
-  // Whitelist check — only allowed handles can enter
-  if (!isWhitelisted(name)) {
-    showJoinError("Your handle is not on the access list. Ask an admin to add you.");
-    return;
-  }
-
   myName = name;
   localStorage.setItem("villagesquare-name", myName);
   // Lock the handle input so the user can’t swap to a different one
@@ -1623,6 +1618,11 @@ async function connect() {
     ).join("");
   });
 
+  socket.on("admin-join-whitelist", (list) => {
+    adminJoinWhitelist = Array.isArray(list) ? list : [];
+    renderAdminWhitelist();
+  });
+
   // ── Collection / Market / Trade socket handlers ──────────────────────────
 
   socket.on("force-disconnect", ({ message }) => {
@@ -1987,6 +1987,7 @@ function openAdminPanel() {
   adminPanelModal.classList.remove("hidden");
   // Load ban list each open
   if (socket) socket.emit("admin-get-bans");
+  if (socket) socket.emit("admin-get-join-whitelist");
   showAdminTab("tokens");
   renderAdminWhitelist();
 }
@@ -2029,11 +2030,12 @@ function renderAdminWhitelist() {
   const listEl = document.getElementById("admin-whitelist-list");
   if (!listEl) return;
   listEl.innerHTML = "";
-  if (!joinWhitelist.length) {
+  const list = adminJoinWhitelist.length ? adminJoinWhitelist : [..._WHITELIST_PERMANENT];
+  if (!list.length) {
     listEl.innerHTML = '<li class="empty-hint">No handles yet.</li>';
     return;
   }
-  for (const handle of joinWhitelist) {
+  for (const handle of list) {
     const isPermanent = _WHITELIST_PERMANENT.some((h) => h.toLowerCase() === handle.toLowerCase());
     const li = document.createElement("li");
     li.className = "admin-whitelist-row";
@@ -2047,9 +2049,8 @@ function renderAdminWhitelist() {
       removeBtn.className = "gs-btn remove";
       removeBtn.textContent = "Remove";
       removeBtn.addEventListener("click", () => {
-        whitelistRemove(handle);
-        renderAdminWhitelist();
-        showAdminResult("@" + handle + " removed from whitelist.", true);
+        if (!socket) return;
+        socket.emit("admin-remove-join-whitelist", { handle });
       });
       li.appendChild(removeBtn);
     }
@@ -2063,13 +2064,9 @@ if (adminWhitelistAddBtn) {
   const doWhitelistAdd = () => {
     const val = adminWhitelistInput ? adminWhitelistInput.value.trim() : "";
     if (!val) { showAdminResult("Enter a handle.", false); return; }
-    if (whitelistAdd(val)) {
-      showAdminResult("@" + val + " added to whitelist.", true);
-      renderAdminWhitelist();
-      if (adminWhitelistInput) adminWhitelistInput.value = "";
-    } else {
-      showAdminResult("@" + val + " is already on the whitelist.", false);
-    }
+    if (!socket) return;
+    socket.emit("admin-add-join-whitelist", { handle: val });
+    if (adminWhitelistInput) adminWhitelistInput.value = "";
   };
   adminWhitelistAddBtn.addEventListener("click", doWhitelistAdd);
   if (adminWhitelistInput) adminWhitelistInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doWhitelistAdd(); });
