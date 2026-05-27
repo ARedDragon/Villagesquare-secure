@@ -163,12 +163,27 @@ let nicknames = JSON.parse(localStorage.getItem("villagesquare-nicknames") || "{
 const _WHITELIST_PERMANENT = ["jaydenlian"];
 let joinWhitelist = [];
 
-function loadWhitelist() {
+function normalizeWhitelist(list) {
+  const out = [];
+  const seen = new Set();
+  for (const item of list || []) {
+    const handle = String(item || "").trim();
+    if (!handle) continue;
+    const key = handle.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(handle);
+  }
+  return out;
+}
+
+function loadWhitelist(opts) {
+  const persist = !opts || opts.persist !== false;
   try {
     const raw  = localStorage.getItem("villagesquare-whitelist");
     const saved = raw ? JSON.parse(raw) : null;
     // Use the saved array if it's a valid array, otherwise start fresh.
-    joinWhitelist = Array.isArray(saved) ? [...saved] : [];
+    joinWhitelist = Array.isArray(saved) ? normalizeWhitelist(saved) : [];
   } catch (e) {
     joinWhitelist = [];
   }
@@ -180,7 +195,7 @@ function loadWhitelist() {
   }
   // Write the merged result back so localStorage is always initialised
   // (covers first-ever load and post-clear-storage recovery).
-  saveWhitelist();
+  if (persist) saveWhitelist();
 }
 function saveWhitelist() {
   try { localStorage.setItem("villagesquare-whitelist", JSON.stringify(joinWhitelist)); } catch (_) {}
@@ -201,10 +216,10 @@ function whitelistRemove(handle) {
   saveWhitelist();
   return true;
 }
-loadWhitelist();
+loadWhitelist({ persist: true });
 // Keep in-memory list in sync if another tab/window changes the whitelist.
 window.addEventListener("storage", (e) => {
-  if (e.key === "villagesquare-whitelist") loadWhitelist();
+  if (e.key === "villagesquare-whitelist") loadWhitelist({ persist: false });
 });
 // ──────────────────────────────────────────────────────────────────────────────
 
