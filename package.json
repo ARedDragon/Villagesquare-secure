@@ -1,0 +1,14 @@
+{
+  "name": "relay-chat",
+  "version": "1.0.0",
+  "description": "Relay — private messaging and groups that save until you delete them",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}
