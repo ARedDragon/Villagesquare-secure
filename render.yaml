@@ -6,3 +6,10 @@ services:
     startCommand: npm start
     plan: free
     healthCheckPath: /
+    envVars:
+      - key: DATA_DIR
+        value: /var/data/relay-data
+    disk:
+      name: relay-data
+      mountPath: /var/data
+      sizeGB: 1

@@ -1249,6 +1249,20 @@ io.on("connection", (socket) => {
     gs.opponent = socket.username;
     gs.status = "playing";
 
+    const gameNames = {
+      rps: "Rock Paper Scissors",
+      dice: "Dice Duel",
+      coinflip: "Coin Flip",
+      numberduel: "Number Duel",
+      reaction: "Reaction Race",
+      mathduel: "Math Duel",
+      trivia: "Trivia Duel",
+      typerace: "Type Race",
+    };
+    const versusInfo = `${gs.challenger} vs ${gs.opponent}`;
+    io.to(userRoom(gs.challenger)).emit("game-info", { message: `${gameNames[gs.game] || "Game"} accepted: ${versusInfo}` });
+    io.to(userRoom(gs.opponent)).emit("game-info", { message: `${gameNames[gs.game] || "Game"} accepted: ${versusInfo}` });
+
     if (gs.game === "coinflip") {
       const flip = Math.random() < 0.5 ? "Heads" : "Tails";
       const winnerName = Math.random() < 0.5 ? gs.challenger : gs.opponent;
@@ -1373,7 +1387,6 @@ io.on("connection", (socket) => {
     }
 
     // RPS (default pick-based game)
-    const gameNames = { rps: "Rock Paper Scissors" };
     io.to(userRoom(gs.challenger)).emit("game-started", {
       gameId, game: gs.game, gameName: gameNames[gs.game] || gs.game, opponent: gs.opponent,
     });

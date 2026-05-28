@@ -2,8 +2,15 @@
 const fs = require("fs");
 const path = require("path");
 
-const DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : process.env.STORE_DIR
+    ? path.resolve(process.env.STORE_DIR)
+    : process.env.RENDER_DISK_PATH
+      ? path.join(process.env.RENDER_DISK_PATH, "relay-data")
+      : path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "store.json");
+const LEGACY_DATA_FILE = path.join(__dirname, "data", "store.json");
 
 const DEFAULT_GROUPS = ["general", "lounge", "school"];
 
@@ -32,8 +39,12 @@ function uk(username) {
 
 function load() {
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, "utf8");
+    const sourceFile = fs.existsSync(DATA_FILE)
+      ? DATA_FILE
+      : (DATA_FILE !== LEGACY_DATA_FILE && fs.existsSync(LEGACY_DATA_FILE) ? LEGACY_DATA_FILE : null);
+
+    if (sourceFile) {
+      const raw = fs.readFileSync(sourceFile, "utf8");
       const parsed = JSON.parse(raw);
       // Migrate: normalize all user keys to lowercase, backfill displayName
       const normalizedUsers = {};
