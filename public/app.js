@@ -127,6 +127,8 @@ const shopResultEl = document.getElementById("shop-result");
 const inventoryModal = document.getElementById("inventory-modal");
 const closeInventoryBtn = document.getElementById("close-inventory-btn");
 const inventoryBalanceLabel = document.getElementById("inventory-balance-label");
+const bgDarknessRange = document.getElementById("bg-darkness-range");
+const bgNoBackdrop = document.getElementById("bg-no-backdrop");
 const inventoryThemesEl = document.getElementById("inventory-themes");
 const inventoryTitlesEl = document.getElementById("inventory-titles");
 const inventoryResultEl = document.getElementById("inventory-result");
@@ -164,6 +166,8 @@ let myTokens = 0;
 let ownedGradientThemes = [];
 let activeGradientTheme = null;
 let gradientThemesMeta = {};
+let backgroundDarkness = Math.max(0, Math.min(80, parseInt(localStorage.getItem("villagesquare-bg-darkness") || "30", 10) || 30));
+let noBackdropMode = localStorage.getItem("villagesquare-no-backdrop") === "on";
 let ownedTitles = [];
 let activeTitle = null;
 let shopDayKey = "";
@@ -587,6 +591,20 @@ function applyOwnedBackgroundTheme(themeKey) {
   const meta = themeKey ? gradientThemesMeta[themeKey] : null;
   const root = document.documentElement;
   root.style.setProperty("--user-bg-gradient", meta && meta.gradient ? meta.gradient : "none");
+  document.body.classList.toggle("has-user-bg-theme", !!meta);
+}
+
+function applyBackgroundBackdropSettings() {
+  const root = document.documentElement;
+  const dim = noBackdropMode ? 0 : backgroundDarkness / 100;
+  const panelOpacity = noBackdropMode ? 1 : 0.78;
+  const hoverOpacity = noBackdropMode ? 1 : 0.9;
+  const blur = noBackdropMode ? "0px" : "16px";
+  root.style.setProperty("--user-bg-dim-opacity", String(dim));
+  root.style.setProperty("--user-panel-opacity", String(panelOpacity));
+  root.style.setProperty("--user-panel-hover-opacity", String(hoverOpacity));
+  root.style.setProperty("--user-backdrop-blur", blur);
+  document.body.classList.toggle("no-user-backdrop", !!noBackdropMode);
 }
 
 function renderShop() {
@@ -680,6 +698,8 @@ function showInventoryResult(msg, ok) {
 
 function renderInventory() {
   if (inventoryBalanceLabel) inventoryBalanceLabel.textContent = `Balance: ${myTokens} tokens`;
+  if (bgDarknessRange) bgDarknessRange.value = String(backgroundDarkness);
+  if (bgNoBackdrop) bgNoBackdrop.checked = !!noBackdropMode;
 
   if (inventoryThemesEl) {
     const owned = Array.isArray(ownedGradientThemes) ? ownedGradientThemes : [];
@@ -2113,6 +2133,20 @@ if (inventoryModal) {
     if (e.target === inventoryModal) closeInventoryModal();
   });
 }
+if (bgDarknessRange) {
+  bgDarknessRange.addEventListener("input", () => {
+    backgroundDarkness = Math.max(0, Math.min(80, parseInt(bgDarknessRange.value, 10) || 0));
+    try { localStorage.setItem("villagesquare-bg-darkness", String(backgroundDarkness)); } catch (_) {}
+    applyBackgroundBackdropSettings();
+  });
+}
+if (bgNoBackdrop) {
+  bgNoBackdrop.addEventListener("change", () => {
+    noBackdropMode = !!bgNoBackdrop.checked;
+    try { localStorage.setItem("villagesquare-no-backdrop", noBackdropMode ? "on" : "off"); } catch (_) {}
+    applyBackgroundBackdropSettings();
+  });
+}
 
 if (nicknameBtn) {
   nicknameBtn.addEventListener("click", () => {
@@ -2567,4 +2601,5 @@ if (adminMsgLoadBtn && adminMsgChannelInput) {
 
 // Restore saved theme on load
 applyTheme(localStorage.getItem("villagesquare-theme") || "dark");
+applyBackgroundBackdropSettings();
 
