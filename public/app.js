@@ -128,6 +128,7 @@ const inventoryModal = document.getElementById("inventory-modal");
 const closeInventoryBtn = document.getElementById("close-inventory-btn");
 const inventoryBalanceLabel = document.getElementById("inventory-balance-label");
 const bgDarknessRange = document.getElementById("bg-darkness-range");
+const bgNoBackground = document.getElementById("bg-no-background");
 const bgNoBackdrop = document.getElementById("bg-no-backdrop");
 const inventoryThemesEl = document.getElementById("inventory-themes");
 const inventoryTitlesEl = document.getElementById("inventory-titles");
@@ -170,6 +171,7 @@ let ownedGradientThemes = [];
 let activeGradientTheme = null;
 let gradientThemesMeta = {};
 let backgroundDarkness = Math.max(0, Math.min(80, parseInt(localStorage.getItem("villagesquare-bg-darkness") || "30", 10) || 30));
+let noBackgroundMode = localStorage.getItem("villagesquare-no-background") === "on";
 let noBackdropMode = localStorage.getItem("villagesquare-no-backdrop") === "on";
 let ownedTitles = [];
 let activeTitle = null;
@@ -610,22 +612,26 @@ function showShopResult(msg, ok) {
 
 function applyOwnedBackgroundTheme(themeKey) {
   const meta = themeKey ? gradientThemesMeta[themeKey] : null;
+  const useBackground = !!meta && !noBackgroundMode;
   const root = document.documentElement;
-  root.style.setProperty("--user-bg-gradient", meta && meta.gradient ? meta.gradient : "none");
-  document.body.classList.toggle("has-user-bg-theme", !!meta);
+  root.style.setProperty("--user-bg-gradient", useBackground && meta.gradient ? meta.gradient : "none");
+  document.body.classList.toggle("has-user-bg-theme", useBackground);
+  applyBackgroundBackdropSettings();
 }
 
 function applyBackgroundBackdropSettings() {
   const root = document.documentElement;
-  const dim = noBackdropMode ? 0 : backgroundDarkness / 100;
-  const panelOpacity = noBackdropMode ? 1 : 0.78;
-  const hoverOpacity = noBackdropMode ? 1 : 0.9;
-  const blur = noBackdropMode ? "0px" : "16px";
+  const hasBackground = document.body.classList.contains("has-user-bg-theme");
+  const disableBackdrop = noBackdropMode || !hasBackground;
+  const dim = disableBackdrop ? 0 : backgroundDarkness / 100;
+  const panelOpacity = disableBackdrop ? 1 : 0.78;
+  const hoverOpacity = disableBackdrop ? 1 : 0.9;
+  const blur = disableBackdrop ? "0px" : "16px";
   root.style.setProperty("--user-bg-dim-opacity", String(dim));
   root.style.setProperty("--user-panel-opacity", String(panelOpacity));
   root.style.setProperty("--user-panel-hover-opacity", String(hoverOpacity));
   root.style.setProperty("--user-backdrop-blur", blur);
-  document.body.classList.toggle("no-user-backdrop", !!noBackdropMode);
+  document.body.classList.toggle("no-user-backdrop", disableBackdrop);
 }
 
 function renderShop() {
@@ -720,6 +726,7 @@ function showInventoryResult(msg, ok) {
 function renderInventory() {
   if (inventoryBalanceLabel) inventoryBalanceLabel.textContent = `Balance: ${myTokens} tokens`;
   if (bgDarknessRange) bgDarknessRange.value = String(backgroundDarkness);
+  if (bgNoBackground) bgNoBackground.checked = !!noBackgroundMode;
   if (bgNoBackdrop) bgNoBackdrop.checked = !!noBackdropMode;
 
   if (inventoryThemesEl) {
@@ -1179,13 +1186,91 @@ const _BAD_WORDS = [
   "bastard","damn","hell","crap","piss","asshole","motherfucker","bullshit",
   "wanker","twat","prick","arse","bollocks","tosser",
 ];
-const _FILTER_RE = new RegExp(
-  "\\b(" + _BAD_WORDS.map((w) => w.split("").join("[^a-z0-9]*")).join("|") + ")\\b",
-  "gi"
-);
+const _BAD_WORDS_NORM = _BAD_WORDS.map((w) => w.toLowerCase());
+const _FILTER_LEET_MAP = {
+  "0": "o",
+  "1": "i",
+  "3": "e",
+  "4": "a",
+  "5": "s",
+  "7": "t",
+  "!": "i",
+  "@": "a",
+  "$": "s",
+};
+
+function normalizeFilterChar(ch) {
+  const lower = ch.toLowerCase();
+  return _FILTER_LEET_MAP[lower] || lower;
+}
+
+function findFilterRanges(text) {
+  const normalizedChars = [];
+  const indexMap = [];
+
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (!/[a-z0-9]/i.test(ch)) continue;
+    normalizedChars.push(normalizeFilterChar(ch));
+    indexMap.push(i);
+  }
+
+  const normalized = normalizedChars.join("");
+  if (!normalized) return [];
+
+  const ranges = [];
+  for (const badWord of _BAD_WORDS_NORM) {
+    let start = 0;
+    while (start < normalized.length) {
+      const idx = normalized.indexOf(badWord, start);
+      if (idx === -1) break;
+
+      const prev = idx > 0 ? normalized[idx - 1] : "";
+      const next = idx + badWord.length < normalized.length ? normalized[idx + badWord.length] : "";
+      const isShortWord = badWord.length <= 3;
+      const hasLetterBefore = /[a-z]/.test(prev);
+      const hasLetterAfter = /[a-z]/.test(next);
+      const boundaryOk = !hasLetterBefore && !hasLetterAfter;
+
+      if (!isShortWord || boundaryOk) {
+        const from = indexMap[idx];
+        const to = indexMap[idx + badWord.length - 1];
+        if (typeof from === "number" && typeof to === "number") ranges.push([from, to]);
+      }
+
+      start = idx + 1;
+    }
+  }
+
+  if (!ranges.length) return [];
+
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged = [ranges[0]];
+  for (let i = 1; i < ranges.length; i += 1) {
+    const curr = ranges[i];
+    const prev = merged[merged.length - 1];
+    if (curr[0] <= prev[1] + 1) {
+      prev[1] = Math.max(prev[1], curr[1]);
+    } else {
+      merged.push(curr);
+    }
+  }
+
+  return merged;
+}
+
 function applyFilter(text) {
-  if (!filterEnabled) return text;
-  return text.replace(_FILTER_RE, (m) => m[0] + "*".repeat(Math.max(1, m.length - 1)));
+  if (!filterEnabled || typeof text !== "string" || !text) return text;
+  const ranges = findFilterRanges(text);
+  if (!ranges.length) return text;
+
+  const out = text.split("");
+  for (const [from, to] of ranges) {
+    for (let i = from + 1; i <= to; i += 1) {
+      out[i] = "*";
+    }
+  }
+  return out.join("");
 }
 
 function deleteMessage(messageId) {
@@ -2169,6 +2254,13 @@ if (bgDarknessRange) {
     backgroundDarkness = Math.max(0, Math.min(80, parseInt(bgDarknessRange.value, 10) || 0));
     try { localStorage.setItem("villagesquare-bg-darkness", String(backgroundDarkness)); } catch (_) {}
     applyBackgroundBackdropSettings();
+  });
+}
+if (bgNoBackground) {
+  bgNoBackground.addEventListener("change", () => {
+    noBackgroundMode = !!bgNoBackground.checked;
+    try { localStorage.setItem("villagesquare-no-background", noBackgroundMode ? "on" : "off"); } catch (_) {}
+    applyOwnedBackgroundTheme(activeGradientTheme);
   });
 }
 if (bgNoBackdrop) {
