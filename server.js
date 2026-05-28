@@ -357,9 +357,8 @@ function titleMetaFor(title) {
 function hydrateMessagesWithTitleMeta(messages) {
   return (messages || []).map((m) => {
     const t = m.title || (m.user ? store.getTitle(m.user) : null) || null;
-    const gt = m.gradientTheme || (m.user ? store.getActiveGradientTheme(m.user) : null) || null;
     const tm = titleMetaFor(t);
-    return { ...m, title: t, titleMeta: tm, gradientTheme: gt, gradientMeta: gradientMetaFor(gt) || tm };
+    return { ...m, title: t, titleMeta: tm, gradientMeta: tm };
   });
 }
 
@@ -1051,7 +1050,6 @@ io.on("connection", (socket) => {
 
     const msgTitle = store.getTitle(socket.username);
     const msgTitleMeta = titleMetaFor(msgTitle);
-    const activeTheme = store.getActiveGradientTheme(socket.username);
     const msg = {
       id: `${Date.now()}-${socket.id}`,
       type: "chat",
@@ -1060,8 +1058,7 @@ io.on("connection", (socket) => {
       displayName: socket.displayName || socket.username,
       title: msgTitle,
       titleMeta: msgTitleMeta,
-      gradientTheme: activeTheme,
-      gradientMeta: gradientMetaFor(activeTheme) || msgTitleMeta,
+      gradientMeta: msgTitleMeta,
       text: body,
       time: new Date().toISOString(),
     };

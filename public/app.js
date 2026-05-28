@@ -583,6 +583,12 @@ function showShopResult(msg, ok) {
   shopResultEl.classList.remove("hidden");
 }
 
+function applyOwnedBackgroundTheme(themeKey) {
+  const meta = themeKey ? gradientThemesMeta[themeKey] : null;
+  const root = document.documentElement;
+  root.style.setProperty("--user-bg-gradient", meta && meta.gradient ? meta.gradient : "none");
+}
+
 function renderShop() {
   if (!shopItemsEl) return;
   if (shopBalanceLabel) shopBalanceLabel.textContent = `Balance: ${myTokens} tokens`;
@@ -881,7 +887,7 @@ function renderMessages(channelId) {
       const isMine = msg.user === myName;
       const msgTitle = msg.title || userTitles[msg.user.toLowerCase()] || null;
       const msgTitleMeta = msg.titleMeta || userTitleMeta[msg.user.toLowerCase()] || null;
-      const msgGradientMeta = msg.gradientMeta || msgTitleMeta || null;
+      const msgGradientMeta = msgTitleMeta || null;
       li.className = "msg chat" + (isMine ? " mine" : "") + (isDm ? " dm" : "") + (msgTitle ? ` mine-${msgTitle}` : "") + (msgGradientMeta ? " msg-themed" : "");
       const senderLabel = msg.displayName || displayName(msg.user);
       const initial = senderLabel.charAt(0).toUpperCase();
@@ -1469,6 +1475,7 @@ async function connect() {
     myTokens = tokens || 0;
     ownedGradientThemes = Array.isArray(ownedG) ? ownedG : [];
     activeGradientTheme = activeG || null;
+    applyOwnedBackgroundTheme(activeGradientTheme);
     ownedTitles = Array.isArray(ownedT) ? ownedT.map((k) => ({ key: k, label: (TITLE_META[k] && TITLE_META[k].label) || String(k).toUpperCase() })) : [];
     activeTitle = title || null;
     chats = (serverChats || []).map((c) => ({ ...c, unread: 0 }));
@@ -1772,6 +1779,7 @@ async function connect() {
     ownedGradientThemes = Array.isArray(ownedG) ? ownedG : ownedGradientThemes;
     activeGradientTheme = activeG || null;
     gradientThemesMeta = gradientThemes || gradientThemesMeta;
+    applyOwnedBackgroundTheme(activeGradientTheme);
     if (Array.isArray(invTitles)) ownedTitles = invTitles;
     if (typeof invActiveTitle !== "undefined") activeTitle = invActiveTitle || null;
     updateTokenDisplay();
@@ -1785,6 +1793,7 @@ async function connect() {
 
   socket.on("gradient-theme-updated", ({ activeGradientTheme: active }) => {
     activeGradientTheme = active || null;
+    applyOwnedBackgroundTheme(activeGradientTheme);
     renderShop();
     renderInventory();
   });
@@ -1794,6 +1803,7 @@ async function connect() {
     if (Array.isArray(ownedG)) ownedGradientThemes = ownedG;
     if (typeof activeG !== "undefined") activeGradientTheme = activeG || null;
     if (gradientThemes) gradientThemesMeta = gradientThemes;
+    applyOwnedBackgroundTheme(activeGradientTheme);
     if (Array.isArray(invTitles)) ownedTitles = invTitles;
     if (typeof invActiveTitle !== "undefined") activeTitle = invActiveTitle || null;
     updateTokenDisplay();

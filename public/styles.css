@@ -173,6 +173,7 @@
 
 :root {
   --bg: #1e1f24;
+  --user-bg-gradient: none;
   --surface: #24262d;
   --surface2: #2e3038;
   --border: #383b45;
@@ -324,7 +325,11 @@ html[data-theme="nord"] {
 
 body {
   font-family: 'Inter', "Segoe UI", system-ui, sans-serif;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: var(--user-bg-gradient);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   color: var(--text);
   min-height: 100dvh;
 }
