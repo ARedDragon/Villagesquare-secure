@@ -312,14 +312,6 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // Global login whitelist check (admin handle is always allowed)
-    if (name !== ADMIN_HANDLE && !store.isJoinWhitelisted(name)) {
-      socket.emit("register-error", {
-        message: `@${name} is not whitelisted yet. Ask an admin to approve your handle.`,
-      });
-      return;
-    }
-
     if (isNameTaken(name, socket.id)) {
       socket.emit("register-error", {
         message: `"${name}" is already online. Pick another handle.`,
@@ -413,47 +405,6 @@ io.on("connection", (socket) => {
       messages: store.getMessages(channelId),
       label: channelLabel(channelId, socket.username),
     });
-  });
-
-  // Admin: manage global join whitelist
-  socket.on("admin-get-join-whitelist", () => {
-    if (!socket.username || socket.username !== ADMIN_HANDLE) return;
-    socket.emit("admin-join-whitelist", store.getJoinWhitelist());
-  });
-
-  socket.on("admin-add-join-whitelist", ({ handle }) => {
-    if (!socket.username || socket.username !== ADMIN_HANDLE) return;
-    const target = sanitizeName(handle);
-    if (!target) {
-      socket.emit("admin-action-result", { ok: false, message: "Invalid handle (2-20 chars)." });
-      return;
-    }
-    if (!store.addJoinWhitelist(target)) {
-      socket.emit("admin-action-result", { ok: false, message: `@${target} is already whitelisted.` });
-      return;
-    }
-    socket.emit("admin-action-result", { ok: true, message: `@${target} added to whitelist.` });
-    socket.emit("admin-join-whitelist", store.getJoinWhitelist());
-  });
-
-  socket.on("admin-remove-join-whitelist", ({ handle }) => {
-    if (!socket.username || socket.username !== ADMIN_HANDLE) return;
-    const target = sanitizeName(handle);
-    if (!target) {
-      socket.emit("admin-action-result", { ok: false, message: "Invalid handle." });
-      return;
-    }
-    if (target === ADMIN_HANDLE) {
-      socket.emit("admin-action-result", { ok: false, message: "Cannot remove the admin handle." });
-      socket.emit("admin-join-whitelist", store.getJoinWhitelist());
-      return;
-    }
-    if (!store.removeJoinWhitelist(target)) {
-      socket.emit("admin-action-result", { ok: false, message: `@${target} is not in whitelist.` });
-      return;
-    }
-    socket.emit("admin-action-result", { ok: true, message: `@${target} removed from whitelist.` });
-    socket.emit("admin-join-whitelist", store.getJoinWhitelist());
   });
 
   // Admin: give tokens to any user (from thin air, not admin’s balance)

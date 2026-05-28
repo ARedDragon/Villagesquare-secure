@@ -154,7 +154,6 @@
               <button type="button" class="dropdown-item" data-game="dice">&#x1F3B2; Dice Duel</button>
               <button type="button" class="dropdown-item" data-game="coinflip">&#x1FA99; Coin Flip</button>
               <button type="button" class="dropdown-item" data-game="numberduel">&#x1F522; Number Duel</button>
-              <button type="button" class="dropdown-item" data-game="8ball">&#x1F3B1; Magic 8-Ball</button>
               <button type="button" class="dropdown-item" data-game="reaction">&#x26A1; Reaction Race</button>
               <button type="button" class="dropdown-item" data-game="mathduel">&#x1F9EE; Math Duel</button>
               <button type="button" class="dropdown-item" data-game="trivia">&#x1F9E0; Trivia Duel</button>
@@ -263,21 +262,6 @@
         <button type="button" class="num-pick-btn" data-num="9">9</button>
         <button type="button" class="num-pick-btn" data-num="10">10</button>
       </div>
-    </div>
-  </div>
-
-  <!-- Magic 8-Ball modal -->
-  <div id="eightball-modal" class="modal hidden" role="dialog" aria-labelledby="eightball-modal-title">
-    <div class="modal-card">
-      <header class="modal-head">
-        <h2 id="eightball-modal-title">&#x1F3B1; Magic 8-Ball</h2>
-        <button id="close-eightball-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
-      </header>
-      <p class="modal-hint">Ask a yes/no question &mdash; anyone can accept and the 8-ball will answer!</p>
-      <label>Your question
-        <input id="eightball-question-input" type="text" placeholder="e.g. Will we win tonight?" maxlength="100" autocomplete="off" />
-      </label>
-      <button id="eightball-submit-btn" type="button" class="modal-primary">Challenge</button>
     </div>
   </div>
 
@@ -452,12 +436,12 @@
         <button type="button" class="tab" data-admintab="titles">Titles</button>
         <button type="button" class="tab" data-admintab="users">Users</button>
         <button type="button" class="tab" data-admintab="messages">Messages</button>
-        <button type="button" class="tab" data-admintab="whitelist">Whitelist</button>
       </div>
+      <datalist id="admin-online-handles"></datalist>
       <div id="admintab-tokens" class="tab-panel">
         <p class="modal-hint">Give or take tokens. Admin balance is unaffected.</p>
         <label>Target handle
-          <input id="admin-token-handle" type="text" placeholder="e.g. alice" maxlength="24" autocomplete="off" />
+          <input id="admin-token-handle" type="text" placeholder="e.g. alice" maxlength="24" autocomplete="off" list="admin-online-handles" />
         </label>
         <label>Amount
           <input id="admin-token-amount" type="number" min="1" max="100000" placeholder="e.g. 10" />
@@ -470,7 +454,7 @@
       <div id="admintab-bans" class="tab-panel hidden">
         <p class="modal-hint">Banned villagers cannot sign in. Temp bans expire automatically.</p>
         <label>Target handle
-          <input id="admin-ban-handle" type="text" placeholder="e.g. alice" maxlength="24" autocomplete="off" />
+          <input id="admin-ban-handle" type="text" placeholder="e.g. alice" maxlength="24" autocomplete="off" list="admin-online-handles" />
         </label>
         <label>Ban type
           <select id="admin-ban-type">
@@ -515,7 +499,7 @@
       <div id="admintab-titles" class="tab-panel hidden">
         <p class="modal-hint">Assign a title badge that appears next to a user's name in chat.</p>
         <label>Target handle
-          <input id="admin-title-handle" type="text" placeholder="e.g. alice" maxlength="24" autocomplete="off" />
+          <input id="admin-title-handle" type="text" placeholder="e.g. alice" maxlength="24" autocomplete="off" list="admin-online-handles" />
         </label>
         <label>Title
           <select id="admin-title-select">
@@ -544,14 +528,6 @@
           <button id="admin-msg-load-btn" type="button" class="modal-primary small">Load</button>
         </div>
         <div id="admin-msg-panel" class="admin-msg-panel"></div>
-      </div>
-      <div id="admintab-whitelist" class="tab-panel hidden">
-        <p class="modal-hint">Only handles on this list can sign in. <strong>JaydenLian</strong> is permanently allowed and cannot be removed.</p>
-        <ul id="admin-whitelist-list" class="admin-bans-list" style="max-height:180px"></ul>
-        <div class="gs-add-row" style="margin-top:0.5rem">
-          <input id="admin-whitelist-input" type="text" placeholder="Add handle&hellip;" maxlength="24" autocomplete="off" />
-          <button id="admin-whitelist-add-btn" type="button" class="modal-primary small">Add</button>
-        </div>
       </div>
       <p id="admin-result-msg" class="admin-result-msg hidden"></p>
     </div>

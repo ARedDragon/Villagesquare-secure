@@ -11,7 +11,6 @@ const DEFAULT_DATA = {
   messages: {},
   groups: [...DEFAULT_GROUPS],
   users: {},
-  joinWhitelist: [],
   groupMeta: {},
   bans: {},
   inventory: {},
@@ -19,6 +18,7 @@ const DEFAULT_DATA = {
   rap: {},
   trades: {},
   missedMentions: {},
+  titles: {},
 };
 
 let data = JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -50,7 +50,6 @@ function load() {
         messages: parsed.messages || {},
         groups: parsed.groups?.length ? parsed.groups : [...DEFAULT_GROUPS],
         users: normalizedUsers,
-        joinWhitelist: Array.isArray(parsed.joinWhitelist) ? parsed.joinWhitelist : [],
         groupMeta: parsed.groupMeta || {},
         bans: parsed.bans || {},
         inventory: parsed.inventory || {},
@@ -58,6 +57,7 @@ function load() {
         rap: parsed.rap || {},
         trades: parsed.trades || {},
         missedMentions: parsed.missedMentions || {},
+        titles: parsed.titles || {},
       };
       // Ensure built-in groups always exist (migration for older installs)
       for (const g of DEFAULT_GROUPS) {
@@ -264,37 +264,6 @@ function setDisplayName(handle, name) {
   if (!data.users[key]) data.users[key] = {};
   data.users[key].displayName = String(name).trim().slice(0, 20) || handle;
   scheduleSave();
-}
-
-// ── Join Whitelist (global login allow-list) ───────────────────────────────
-function getJoinWhitelist() {
-  return [...(data.joinWhitelist || [])];
-}
-
-function isJoinWhitelisted(handle) {
-  const key = uk(handle);
-  return (data.joinWhitelist || []).some((h) => uk(h) === key);
-}
-
-function addJoinWhitelist(handle) {
-  const key = uk(handle);
-  if (!key) return false;
-  if (!data.joinWhitelist) data.joinWhitelist = [];
-  if (data.joinWhitelist.some((h) => uk(h) === key)) return false;
-  data.joinWhitelist.push(key);
-  data.joinWhitelist.sort((a, b) => a.localeCompare(b));
-  scheduleSave();
-  return true;
-}
-
-function removeJoinWhitelist(handle) {
-  const key = uk(handle);
-  if (!key || !data.joinWhitelist) return false;
-  const before = data.joinWhitelist.length;
-  data.joinWhitelist = data.joinWhitelist.filter((h) => uk(h) !== key);
-  if (data.joinWhitelist.length === before) return false;
-  scheduleSave();
-  return true;
 }
 
 function getAllUsers() {
@@ -542,9 +511,6 @@ function setTitle(handle, title) {
 
 load();
 
-// Ensure admin account is always whitelisted for login access.
-addJoinWhitelist("jaydenlian");
-
 module.exports = {
   getMessages,
   setMessages,
@@ -586,10 +552,6 @@ module.exports = {
   setPin,
   getDisplayName,
   setDisplayName,
-  getJoinWhitelist,
-  isJoinWhitelisted,
-  addJoinWhitelist,
-  removeJoinWhitelist,
   getAllUsers,
   getGroupMembers,
   addGroupMember,

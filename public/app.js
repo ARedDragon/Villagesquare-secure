@@ -59,10 +59,6 @@ const rpsStatus = document.getElementById("rps-status");
 const numduelModal = document.getElementById("numduel-modal");
 const numduelOpponentLabel = document.getElementById("numduel-opponent-label");
 const numduelStatus = document.getElementById("numduel-status");
-const eightballModal = document.getElementById("eightball-modal");
-const eightballQuestionInput = document.getElementById("eightball-question-input");
-const eightballSubmitBtn = document.getElementById("eightball-submit-btn");
-const closeEightballBtn = document.getElementById("close-eightball-btn");
 const groupSettingsBtn = document.getElementById("group-settings-btn");
 const groupSettingsModal = document.getElementById("group-settings-modal");
 const closeGsBtn = document.getElementById("close-gs-btn");
@@ -144,7 +140,6 @@ let pendingPasscodeGroupName = null;
 let gsCurrentGroup = null;
 let gsCurrentWhitelist = [];
 let gsCurrentBlacklist = [];
-let pendingGameChannel = null;
 let myFriends = [];
 let friendRequests = [];
 let sentFriendRequests = [];
@@ -157,72 +152,6 @@ const _pageLoadTime = Date.now(); // used to ensure loading animation finishes b
 let wagerAmount = 0;
 let pendingNicknameTarget = null;
 let nicknames = JSON.parse(localStorage.getItem("villagesquare-nicknames") || "{}");
-let adminJoinWhitelist = [];
-
-// ── Join Whitelist ─────────────────────────────────────────────────────────────
-// Handles in this array can never be removed via the admin panel.
-const _WHITELIST_PERMANENT = ["jaydenlian"];
-let joinWhitelist = [];
-
-function normalizeWhitelist(list) {
-  const out = [];
-  const seen = new Set();
-  for (const item of list || []) {
-    const handle = String(item || "").trim();
-    if (!handle) continue;
-    const key = handle.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(handle);
-  }
-  return out;
-}
-
-function loadWhitelist(opts) {
-  const persist = !opts || opts.persist !== false;
-  try {
-    const raw  = localStorage.getItem("villagesquare-whitelist");
-    const saved = raw ? JSON.parse(raw) : null;
-    // Use the saved array if it's a valid array, otherwise start fresh.
-    joinWhitelist = Array.isArray(saved) ? normalizeWhitelist(saved) : [];
-  } catch (e) {
-    joinWhitelist = [];
-  }
-  // Always guarantee permanent handles are present in memory.
-  for (const h of _WHITELIST_PERMANENT) {
-    if (!joinWhitelist.some((x) => x.toLowerCase() === h.toLowerCase())) {
-      joinWhitelist.push(h);
-    }
-  }
-  // Write the merged result back so localStorage is always initialised
-  // (covers first-ever load and post-clear-storage recovery).
-  if (persist) saveWhitelist();
-}
-function saveWhitelist() {
-  try { localStorage.setItem("villagesquare-whitelist", JSON.stringify(joinWhitelist)); } catch (_) {}
-}
-function isWhitelisted(handle) {
-  return joinWhitelist.some((h) => h.toLowerCase() === handle.toLowerCase());
-}
-function whitelistAdd(handle) {
-  const trimmed = handle.trim();
-  if (!trimmed || isWhitelisted(trimmed)) return false;
-  joinWhitelist.push(trimmed);
-  saveWhitelist();
-  return true;
-}
-function whitelistRemove(handle) {
-  if (_WHITELIST_PERMANENT.some((h) => h.toLowerCase() === handle.toLowerCase())) return false;
-  joinWhitelist = joinWhitelist.filter((h) => h.toLowerCase() !== handle.toLowerCase());
-  saveWhitelist();
-  return true;
-}
-loadWhitelist({ persist: true });
-// Keep in-memory list in sync if another tab/window changes the whitelist.
-window.addEventListener("storage", (e) => {
-  if (e.key === "villagesquare-whitelist") loadWhitelist({ persist: false });
-});
-// ──────────────────────────────────────────────────────────────────────────────
 
 function roomChannelId(room) {
   const r = (room || "general").trim().slice(0, 32) || "general";
@@ -1033,6 +962,8 @@ function closeReactionModal() {
 function closeMathduelModal() {
   if (mathduelModal) mathduelModal.classList.add("hidden");
   if (mathduelInput) mathduelInput.value = "";
+  if (mathduelInput) mathduelInput.disabled = false;
+  if (mathduelSubmitBtn) mathduelSubmitBtn.disabled = false;
   if (mathduelStatus) mathduelStatus.textContent = "";
   activeGameId = null;
 }
@@ -1046,14 +977,10 @@ function closeTriviaModal() {
 function closeTyperaceModal() {
   if (typeraceModal) typeraceModal.classList.add("hidden");
   if (typeraceInput) typeraceInput.value = "";
+  if (typeraceInput) typeraceInput.disabled = false;
+  if (typeraceSubmitBtn) typeraceSubmitBtn.disabled = false;
   if (typeraceFeedback) typeraceFeedback.textContent = "";
   activeGameId = null;
-}
-
-function closeEightballModal() {
-  eightballModal.classList.add("hidden");
-  pendingGameChannel = null;
-  eightballQuestionInput.value = "";
 }
 
 // ── Group Settings ────────────────────────────────────────────
@@ -1355,6 +1282,7 @@ async function connect() {
     }
     renderOnlineList();
     renderFriendsList();
+    refreshAdminTargetDatalist();
     // Keep DM subtitle in sync as friends go on/offline
     if (activeChannelId && activeChannelId.startsWith("dm:")) {
       const otherUser = dmOtherUser(activeChannelId);
@@ -1445,9 +1373,32 @@ async function connect() {
       if (mathduelOpponentLabel) mathduelOpponentLabel.textContent = "vs " + opponent;
       if (mathduelProblem) mathduelProblem.textContent = problem || "?";
       if (mathduelInput) mathduelInput.value = "";
+      if (mathduelInput) mathduelInput.disabled = false;
+      if (mathduelSubmitBtn) mathduelSubmitBtn.disabled = false;
       if (mathduelStatus) mathduelStatus.textContent = "First correct answer wins!";
       if (mathduelModal) mathduelModal.classList.remove("hidden");
       setTimeout(() => mathduelInput && mathduelInput.focus(), 50);
+    } else if (game === "trivia") {
+      if (triviaOpponentLabel) triviaOpponentLabel.textContent = "vs " + opponent;
+      if (triviaStatus) triviaStatus.textContent = "First correct answer wins!";
+      if (triviaQuestion) triviaQuestion.textContent = question || "";
+      const opts = Array.isArray(options) ? options : [];
+      triviaOptBtns().forEach((btn, i) => {
+        btn.textContent = opts[i] || "";
+        btn.disabled = false;
+        btn.classList.remove("wrong", "correct");
+      });
+      if (triviaModal) triviaModal.classList.remove("hidden");
+    } else if (game === "typerace") {
+      if (typeraceOpponentLabel) typeraceOpponentLabel.textContent = "vs " + opponent;
+      if (typeraceStatus) typeraceStatus.textContent = "Type the phrase below as fast as you can!";
+      if (typeracePhrase) typeracePhrase.textContent = phrase || "";
+      if (typeraceInput) typeraceInput.value = "";
+      if (typeraceInput) typeraceInput.disabled = false;
+      if (typeraceSubmitBtn) typeraceSubmitBtn.disabled = false;
+      if (typeraceFeedback) typeraceFeedback.textContent = "";
+      if (typeraceModal) typeraceModal.classList.remove("hidden");
+      setTimeout(() => typeraceInput && typeraceInput.focus(), 50);
     } else {
       rpsOpponentLabel.textContent = "vs " + opponent;
       rpsStatus.textContent = "Pick your move!";
@@ -1460,6 +1411,17 @@ async function connect() {
     if (reactionModal && !reactionModal.classList.contains("hidden")) {
       if (reactionStatus) reactionStatus.textContent = "Tapped! Waiting for opponent…";
       if (reactionTapBtn) reactionTapBtn.disabled = true;
+    } else if (mathduelModal && !mathduelModal.classList.contains("hidden")) {
+      if (mathduelStatus) mathduelStatus.textContent = "Answer submitted! Waiting for opponent…";
+      if (mathduelInput) mathduelInput.disabled = true;
+      if (mathduelSubmitBtn) mathduelSubmitBtn.disabled = true;
+    } else if (triviaModal && !triviaModal.classList.contains("hidden")) {
+      if (triviaStatus) triviaStatus.textContent = "Answer submitted! Waiting for opponent…";
+      triviaOptBtns().forEach((b) => (b.disabled = true));
+    } else if (typeraceModal && !typeraceModal.classList.contains("hidden")) {
+      if (typeraceFeedback) typeraceFeedback.textContent = "Submitted! Waiting for opponent…";
+      if (typeraceInput) typeraceInput.disabled = true;
+      if (typeraceSubmitBtn) typeraceSubmitBtn.disabled = true;
     } else if (!numduelModal.classList.contains("hidden")) {
       numduelStatus.textContent = "Number submitted! Waiting for opponent…";
       document.querySelectorAll(".num-pick-btn").forEach((b) => (b.disabled = true));
@@ -1618,11 +1580,6 @@ async function connect() {
     ).join("");
   });
 
-  socket.on("admin-join-whitelist", (list) => {
-    adminJoinWhitelist = Array.isArray(list) ? list : [];
-    renderAdminWhitelist();
-  });
-
   // ── Collection / Market / Trade socket handlers ──────────────────────────
 
   socket.on("force-disconnect", ({ message }) => {
@@ -1714,14 +1671,7 @@ document.querySelectorAll(".dropdown-item[data-game]").forEach((item) => {
   item.addEventListener("click", () => {
     if (!socket || !activeChannelId) return;
     gamesMenu.classList.add("hidden");
-    if (item.dataset.game === "8ball") {
-      pendingGameChannel = activeChannelId;
-      eightballQuestionInput.value = "";
-      eightballModal.classList.remove("hidden");
-      setTimeout(() => eightballQuestionInput.focus(), 50);
-    } else {
-      socket.emit("game-challenge", { channelId: activeChannelId, game: item.dataset.game, wager: wagerAmount });
-    }
+    socket.emit("game-challenge", { channelId: activeChannelId, game: item.dataset.game, wager: wagerAmount });
   });
 });
 
@@ -1756,6 +1706,8 @@ if (reactionTapBtn) {
 function submitMathduel() {
   const answer = mathduelInput ? mathduelInput.value.trim() : "";
   if (!answer || !activeGameId || !socket) return;
+  if (mathduelInput) mathduelInput.disabled = false;
+  if (mathduelSubmitBtn) mathduelSubmitBtn.disabled = false;
   socket.emit("game-move", { gameId: activeGameId, move: answer });
 }
 if (mathduelSubmitBtn) mathduelSubmitBtn.addEventListener("click", submitMathduel);
@@ -1785,26 +1737,13 @@ triviaOptBtns().forEach((btn) => {
 function submitTyperace() {
   const typed = typeraceInput ? typeraceInput.value : "";
   if (!typed || !activeGameId || !socket) return;
+  if (typeraceInput) typeraceInput.disabled = false;
+  if (typeraceSubmitBtn) typeraceSubmitBtn.disabled = false;
   if (typeraceFeedback) typeraceFeedback.textContent = "";
   socket.emit("game-move", { gameId: activeGameId, move: typed });
 }
 if (typeraceSubmitBtn) typeraceSubmitBtn.addEventListener("click", submitTyperace);
 if (typeraceInput) typeraceInput.addEventListener("keydown", (e) => { if (e.key === "Enter") submitTyperace(); });
-
-// Magic 8-Ball question modal
-eightballSubmitBtn.addEventListener("click", () => {
-  const q = eightballQuestionInput.value.trim();
-  if (!q || !socket || !pendingGameChannel) return;
-  socket.emit("game-challenge", { channelId: pendingGameChannel, game: "8ball", question: q });
-  closeEightballModal();
-});
-eightballQuestionInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") eightballSubmitBtn.click();
-});
-closeEightballBtn.addEventListener("click", closeEightballModal);
-eightballModal.addEventListener("click", (e) => {
-  if (e.target === eightballModal) closeEightballModal();
-});
 
 // Group Settings modal
 groupSettingsBtn.addEventListener("click", openGroupSettings);
@@ -1933,6 +1872,7 @@ const adminPeekBtn = document.getElementById("admin-peek-btn");
 const adminChannelInput = document.getElementById("admin-channel-input");
 if (adminPeekBtn && adminChannelInput) {
   const doPeek = () => {
+    if (!isAdmin) { showAdminResult("Admin access denied.", false); return; }
     const cid = adminChannelInput.value.trim();
     if (!cid || !socket) return;
     // Open the channel in the chat panel so the admin can see and send messages
@@ -1984,12 +1924,14 @@ const adminDelGroupBtn   = document.getElementById("admin-del-group-btn");
 
 function openAdminPanel() {
   if (!adminPanelModal) return;
+  if (!isAdmin) {
+    showAdminResult("Admin access denied.", false);
+    return;
+  }
   adminPanelModal.classList.remove("hidden");
   // Load ban list each open
   if (socket) socket.emit("admin-get-bans");
-  if (socket) socket.emit("admin-get-join-whitelist");
   showAdminTab("tokens");
-  renderAdminWhitelist();
 }
 
 function closeAdminPanel() {
@@ -2001,11 +1943,10 @@ function showAdminTab(tabName) {
   document.querySelectorAll(".tab[data-admintab]").forEach((t) => {
     t.classList.toggle("active", t.dataset.admintab === tabName);
   });
-  ["tokens", "bans", "content", "titles", "users", "messages", "whitelist"].forEach((name) => {
+  ["tokens", "bans", "content", "titles", "users", "messages"].forEach((name) => {
     const el = document.getElementById("admintab-" + name);
     if (el) el.classList.toggle("hidden", name !== tabName);
   });
-  if (tabName === "whitelist") renderAdminWhitelist();
 }
 
 function showAdminResult(msg, ok) {
@@ -2025,51 +1966,16 @@ document.querySelectorAll(".tab[data-admintab]").forEach((tab) => {
   tab.addEventListener("click", () => showAdminTab(tab.dataset.admintab));
 });
 
-// ── Admin: Whitelist tab ───────────────────────────────────────────────────────
-function renderAdminWhitelist() {
-  const listEl = document.getElementById("admin-whitelist-list");
+function refreshAdminTargetDatalist() {
+  const listEl = document.getElementById("admin-online-handles");
   if (!listEl) return;
   listEl.innerHTML = "";
-  const list = adminJoinWhitelist.length ? adminJoinWhitelist : [..._WHITELIST_PERMANENT];
-  if (!list.length) {
-    listEl.innerHTML = '<li class="empty-hint">No handles yet.</li>';
-    return;
+  const handles = [...new Set((onlineUsers || []).map((u) => (u.handle || u)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  for (const h of handles) {
+    const opt = document.createElement("option");
+    opt.value = h;
+    listEl.appendChild(opt);
   }
-  for (const handle of list) {
-    const isPermanent = _WHITELIST_PERMANENT.some((h) => h.toLowerCase() === handle.toLowerCase());
-    const li = document.createElement("li");
-    li.className = "admin-whitelist-row";
-    const nameSpan = document.createElement("span");
-    nameSpan.className = "admin-whitelist-name";
-    nameSpan.textContent = "@" + handle + (isPermanent ? " (permanent)" : "");
-    li.appendChild(nameSpan);
-    if (!isPermanent) {
-      const removeBtn = document.createElement("button");
-      removeBtn.type = "button";
-      removeBtn.className = "gs-btn remove";
-      removeBtn.textContent = "Remove";
-      removeBtn.addEventListener("click", () => {
-        if (!socket) return;
-        socket.emit("admin-remove-join-whitelist", { handle });
-      });
-      li.appendChild(removeBtn);
-    }
-    listEl.appendChild(li);
-  }
-}
-
-const adminWhitelistInput  = document.getElementById("admin-whitelist-input");
-const adminWhitelistAddBtn = document.getElementById("admin-whitelist-add-btn");
-if (adminWhitelistAddBtn) {
-  const doWhitelistAdd = () => {
-    const val = adminWhitelistInput ? adminWhitelistInput.value.trim() : "";
-    if (!val) { showAdminResult("Enter a handle.", false); return; }
-    if (!socket) return;
-    socket.emit("admin-add-join-whitelist", { handle: val });
-    if (adminWhitelistInput) adminWhitelistInput.value = "";
-  };
-  adminWhitelistAddBtn.addEventListener("click", doWhitelistAdd);
-  if (adminWhitelistInput) adminWhitelistInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doWhitelistAdd(); });
 }
 
 // Login info password toggle
