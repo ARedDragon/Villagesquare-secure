@@ -657,6 +657,7 @@ io.on("connection", (socket) => {
       ownedGradientThemes: store.getOwnedGradientThemes(name),
       activeGradientTheme: store.getActiveGradientTheme(name),
       ownedTitles: store.getOwnedTitles(name),
+      pinnedInfo: store.getPinnedInfo(),
     });
     store.clearMissedMentions(name);
     io.emit("online-users", getOnlineUsers());
@@ -799,6 +800,31 @@ io.on("connection", (socket) => {
     io.socketsLeave(channelId);
     broadcastGroupsListToAll();
     socket.emit("admin-action-result", { ok: true, message: `Group #${gName} deleted.` });
+  });
+
+  // Admin: set a global pinned important notice
+  socket.on("admin-set-pinned-info", ({ text }) => {
+    if (!socket.username || socket.username !== ADMIN_HANDLE) return;
+    const clean = String(text || "").trim().slice(0, 500);
+    if (!clean) {
+      socket.emit("admin-action-result", { ok: false, message: "Enter a notice before pinning." });
+      return;
+    }
+    store.setPinnedInfo({
+      text: clean,
+      updatedAt: Date.now(),
+      updatedBy: socket.username,
+    });
+    io.emit("pinned-info-updated", store.getPinnedInfo());
+    socket.emit("admin-action-result", { ok: true, message: "Important notice pinned." });
+  });
+
+  // Admin: clear global pinned notice
+  socket.on("admin-clear-pinned-info", () => {
+    if (!socket.username || socket.username !== ADMIN_HANDLE) return;
+    store.clearPinnedInfo();
+    io.emit("pinned-info-updated", null);
+    socket.emit("admin-action-result", { ok: true, message: "Pinned notice cleared." });
   });
 
   socket.on("sync-chats", ({ chats }) => {

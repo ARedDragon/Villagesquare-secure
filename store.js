@@ -13,6 +13,7 @@ const DEFAULT_DATA = {
   users: {},
   groupMeta: {},
   bans: {},
+  pinnedInfo: null,
   inventory: {},
   market: {},
   rap: {},
@@ -52,6 +53,7 @@ function load() {
         users: normalizedUsers,
         groupMeta: parsed.groupMeta || {},
         bans: parsed.bans || {},
+        pinnedInfo: parsed.pinnedInfo || null,
         inventory: parsed.inventory || {},
         market: parsed.market || {},
         rap: parsed.rap || {},
@@ -77,10 +79,24 @@ function scheduleSave() {
     try {
       if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
       fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
+      saveTimer = null;
     } catch (err) {
       console.error("Failed to save store:", err.message);
     }
   }, 250);
+}
+
+function flushSaveNow() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+  } catch (err) {
+    console.error("Failed to flush store:", err.message);
+  }
 }
 
 function getMessages(channelId) {
@@ -374,6 +390,36 @@ function getAllBans() {
   return Object.entries(data.bans || {}).map(([handle, b]) => ({ handle, ...b }));
 }
 
+// ── Global pinned admin info ───────────────────────────────────────────────
+function getPinnedInfo() {
+  const info = data.pinnedInfo;
+  if (!info || !info.text) return null;
+  return {
+    text: String(info.text).slice(0, 500),
+    updatedAt: Number(info.updatedAt) || Date.now(),
+    updatedBy: String(info.updatedBy || "admin").slice(0, 24),
+  };
+}
+
+function setPinnedInfo(info) {
+  const text = String((info && info.text) || "").trim().slice(0, 500);
+  if (!text) {
+    data.pinnedInfo = null;
+  } else {
+    data.pinnedInfo = {
+      text,
+      updatedAt: Number((info && info.updatedAt) || Date.now()),
+      updatedBy: String((info && info.updatedBy) || "admin").slice(0, 24),
+    };
+  }
+  scheduleSave();
+}
+
+function clearPinnedInfo() {
+  data.pinnedInfo = null;
+  scheduleSave();
+}
+
 // ── Inventory ─────────────────────────────────────────────────────────────────────
 function getInventory(username) {
   return data.inventory[uk(username)] || [];
@@ -571,6 +617,16 @@ function addOwnedTitle(username, titleKey) {
 
 load();
 
+process.on("beforeExit", flushSaveNow);
+process.on("SIGINT", () => {
+  flushSaveNow();
+  process.exit(0);
+});
+process.on("SIGTERM", () => {
+  flushSaveNow();
+  process.exit(0);
+});
+
 module.exports = {
   getMessages,
   setMessages,
@@ -608,6 +664,9 @@ module.exports = {
   setBan,
   removeBan,
   getAllBans,
+  getPinnedInfo,
+  setPinnedInfo,
+  clearPinnedInfo,
   getPin,
   setPin,
   getDisplayName,
@@ -655,4 +714,5 @@ module.exports = {
   setDailyShop,
   getOwnedTitles,
   addOwnedTitle,
+  flushSaveNow,
 };

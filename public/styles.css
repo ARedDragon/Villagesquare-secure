@@ -822,6 +822,38 @@ body.no-user-backdrop::before {
   transition: color 0.25s ease;
 }
 
+.pinned-info-banner {
+  margin: 0.75rem 1rem 0.25rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #ef4444;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(127, 29, 29, 0.24));
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2) inset, 0 8px 22px rgba(127, 29, 29, 0.28);
+}
+
+.pinned-info-label {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #fecaca;
+  margin-bottom: 0.25rem;
+}
+
+.pinned-info-text {
+  color: #fff5f5;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pinned-info-meta {
+  margin-top: 0.35rem;
+  font-size: 0.74rem;
+  color: #fecaca;
+}
+
 #messages {
   flex: 1;
   list-style: none;
@@ -1268,6 +1300,12 @@ body.no-user-backdrop::before {
   font-weight: 600;
   padding: 0 0.3rem;
   color: var(--text-muted);
+}
+
+#admin-pinned-text {
+  min-height: 74px;
+  resize: vertical;
+  width: 100%;
 }
 
 .hint-small {

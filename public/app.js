@@ -132,6 +132,9 @@ const bgNoBackdrop = document.getElementById("bg-no-backdrop");
 const inventoryThemesEl = document.getElementById("inventory-themes");
 const inventoryTitlesEl = document.getElementById("inventory-titles");
 const inventoryResultEl = document.getElementById("inventory-result");
+const pinnedInfoBanner = document.getElementById("pinned-info-banner");
+const pinnedInfoText = document.getElementById("pinned-info-text");
+const pinnedInfoMeta = document.getElementById("pinned-info-meta");
 
 // ── Mentions banner ───────────────────────────────────────────────
 const mentionsBanner = document.getElementById("mentions-banner");
@@ -170,6 +173,7 @@ let backgroundDarkness = Math.max(0, Math.min(80, parseInt(localStorage.getItem(
 let noBackdropMode = localStorage.getItem("villagesquare-no-backdrop") === "on";
 let ownedTitles = [];
 let activeTitle = null;
+let pinnedInfo = null;
 let shopDayKey = "";
 let shopItems = [];
 let nextTokenAt = 0;
@@ -239,6 +243,23 @@ function showToast(html, duration) {
     toast.style.transition = "opacity 0.3s";
     setTimeout(() => toast.remove(), 350);
   }, duration || 3500);
+}
+
+function renderPinnedInfo() {
+  if (!pinnedInfoBanner || !pinnedInfoText || !pinnedInfoMeta) return;
+  if (!pinnedInfo || !pinnedInfo.text) {
+    pinnedInfoBanner.classList.add("hidden");
+    pinnedInfoText.textContent = "";
+    pinnedInfoMeta.textContent = "";
+    return;
+  }
+  const updatedAt = pinnedInfo.updatedAt ? new Date(pinnedInfo.updatedAt) : null;
+  const by = pinnedInfo.updatedBy ? ` by @${pinnedInfo.updatedBy}` : "";
+  pinnedInfoText.textContent = pinnedInfo.text;
+  pinnedInfoMeta.textContent = updatedAt
+    ? `Pinned ${updatedAt.toLocaleString()}${by}`
+    : `Pinned${by}`;
+  pinnedInfoBanner.classList.remove("hidden");
 }
 
 function channelKind(channelId) {
@@ -1470,7 +1491,7 @@ async function connect() {
     // Don't disconnect — let user re-submit with their PIN
   });
 
-  socket.on("registered", ({ handle, username, displayName: dn, chats: serverChats, groups, blocked, friends, friendRequests: friendReqs, sentRequests, friendsWithNames, tokens, nextTokenAt: nat, isAdmin: adminFlag, missedMentions, title, titleMeta, ownedGradientThemes: ownedG, activeGradientTheme: activeG, ownedTitles: ownedT }) => {
+  socket.on("registered", ({ handle, username, displayName: dn, chats: serverChats, groups, blocked, friends, friendRequests: friendReqs, sentRequests, friendsWithNames, tokens, nextTokenAt: nat, isAdmin: adminFlag, missedMentions, title, titleMeta, ownedGradientThemes: ownedG, activeGradientTheme: activeG, ownedTitles: ownedT, pinnedInfo: incomingPinnedInfo }) => {
     myName = handle || username;
     myDisplayName = dn || myName;
     isAdmin = !!adminFlag;
@@ -1498,6 +1519,8 @@ async function connect() {
     applyOwnedBackgroundTheme(activeGradientTheme);
     ownedTitles = Array.isArray(ownedT) ? ownedT.map((k) => ({ key: k, label: (TITLE_META[k] && TITLE_META[k].label) || String(k).toUpperCase() })) : [];
     activeTitle = title || null;
+    pinnedInfo = incomingPinnedInfo && incomingPinnedInfo.text ? incomingPinnedInfo : null;
+    renderPinnedInfo();
     chats = (serverChats || []).map((c) => ({ ...c, unread: 0 }));
     if (!chats.length) {
       ensureChat(roomChannelId("general"));
@@ -1846,6 +1869,14 @@ async function connect() {
     activeTitle = title || null;
     renderInventory();
     if (activeChannelId) renderMessages(activeChannelId);
+  });
+
+  socket.on("pinned-info-updated", (info) => {
+    pinnedInfo = info && info.text ? info : null;
+    renderPinnedInfo();
+    if (adminPinnedText) {
+      adminPinnedText.value = pinnedInfo && pinnedInfo.text ? pinnedInfo.text : "";
+    }
   });
 
   socket.on("token-error", ({ message }) => {
@@ -2266,6 +2297,9 @@ const adminBansList    = document.getElementById("admin-bans-list");
 // Content controls
 const adminDelGroupInput = document.getElementById("admin-del-group-input");
 const adminDelGroupBtn   = document.getElementById("admin-del-group-btn");
+const adminPinnedText    = document.getElementById("admin-pinned-text");
+const adminPinNoticeBtn  = document.getElementById("admin-pin-notice-btn");
+const adminClearNoticeBtn = document.getElementById("admin-clear-notice-btn");
 
 function openAdminPanel() {
   if (!adminPanelModal) return;
@@ -2274,6 +2308,9 @@ function openAdminPanel() {
     return;
   }
   adminPanelModal.classList.remove("hidden");
+  if (adminPinnedText) {
+    adminPinnedText.value = pinnedInfo && pinnedInfo.text ? pinnedInfo.text : "";
+  }
   // Load ban list each open
   if (socket) socket.emit("admin-get-bans");
   showAdminTab("tokens");
@@ -2408,6 +2445,28 @@ if (adminDelGroupBtn) {
     if (!confirm(`Permanently delete the group #${name} and all its messages?`)) return;
     if (!socket) return;
     socket.emit("admin-delete-group", { groupName: name });
+  });
+}
+
+if (adminPinNoticeBtn) {
+  adminPinNoticeBtn.addEventListener("click", () => {
+    if (!requireAdminAction()) return;
+    const text = adminPinnedText ? adminPinnedText.value.trim() : "";
+    if (!text) {
+      showAdminResult("Enter notice text to pin.", false);
+      return;
+    }
+    if (!socket) return;
+    socket.emit("admin-set-pinned-info", { text });
+  });
+}
+
+if (adminClearNoticeBtn) {
+  adminClearNoticeBtn.addEventListener("click", () => {
+    if (!requireAdminAction()) return;
+    if (!socket) return;
+    socket.emit("admin-clear-pinned-info");
+    if (adminPinnedText) adminPinnedText.value = "";
   });
 }
 

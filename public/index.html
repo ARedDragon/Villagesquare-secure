@@ -171,6 +171,11 @@
           <button id="filter-btn" type="button" class="icon-btn filter-active" title="Profanity filter: ON">&#x1F6AB;</button>
           <button id="delete-chat-btn" type="button" class="icon-btn danger" title="Remove this chat">Delete</button>
         </header>
+        <section id="pinned-info-banner" class="pinned-info-banner hidden" role="status" aria-live="polite">
+          <div class="pinned-info-label">IMPORTANT</div>
+          <div class="pinned-info-text" id="pinned-info-text"></div>
+          <div class="pinned-info-meta" id="pinned-info-meta"></div>
+        </section>
         <ul id="messages" aria-live="polite"></ul>
         <form id="chat-form">
           <input id="message-input" type="text" placeholder="Say something to the square&hellip;" maxlength="2000" autocomplete="off" />
@@ -485,6 +490,16 @@
       </div>
       <div id="admintab-content" class="tab-panel hidden">
         <p class="modal-hint">Delete any square. To delete individual messages, open the channel and use the &times; on any message.</p>
+          <fieldset class="admin-fieldset">
+            <legend>Important Pinned Notice</legend>
+            <label>Notice text
+              <textarea id="admin-pinned-text" rows="3" maxlength="500" placeholder="Important update visible to everyone..."></textarea>
+            </label>
+            <div class="admin-btn-row">
+              <button id="admin-pin-notice-btn" type="button" class="modal-primary">Pin Notice</button>
+              <button id="admin-clear-notice-btn" type="button" class="modal-primary danger-btn">Clear Notice</button>
+            </div>
+          </fieldset>
         <fieldset class="admin-fieldset">
           <legend>Delete Square</legend>
           <label>Square name
