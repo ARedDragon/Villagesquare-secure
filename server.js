@@ -131,7 +131,224 @@ const TITLE_META = {
   titan:     { label: "TITAN",    cls: "title-titan",     gradient: "linear-gradient(90deg, #334155, #0f172a)", textColor: "#fff" },
   oracle:    { label: "ORACLE",   cls: "title-oracle",    gradient: "linear-gradient(90deg, #4338ca, #06b6d4)", textColor: "#fff" },
   nova:      { label: "NOVA",     cls: "title-nova",      gradient: "linear-gradient(90deg, #f97316, #f43f5e)", textColor: "#fff" },
+  scout:     { label: "SCOUT",    cls: "title-scout",     gradient: "#0ea5e9", textColor: "#fff" },
+  villager:  { label: "VILLAGER", cls: "title-villager",  gradient: "#22c55e", textColor: "#fff" },
+  traveler:  { label: "TRAVELER", cls: "title-traveler",  gradient: "#14b8a6", textColor: "#fff" },
+  rookie:    { label: "ROOKIE",   cls: "title-rookie",    gradient: "#60a5fa", textColor: "#fff" },
+  thinker:   { label: "THINKER",  cls: "title-thinker",   gradient: "#818cf8", textColor: "#fff" },
+  helper:    { label: "HELPER",   cls: "title-helper",    gradient: "#34d399", textColor: "#fff" },
+  buddy:     { label: "BUDDY",    cls: "title-buddy",     gradient: "#f59e0b", textColor: "#fff" },
+  chatter:   { label: "CHATTER",  cls: "title-chatter",   gradient: "#38bdf8", textColor: "#fff" },
+  sprout:    { label: "SPROUT",   cls: "title-sprout",    gradient: "#84cc16", textColor: "#fff" },
+  breeze:    { label: "BREEZE",   cls: "title-breeze",    gradient: "#06b6d4", textColor: "#fff" },
+  emberling: { label: "EMBERLING",cls: "title-emberling", gradient: "#f97316", textColor: "#fff" },
+  moonkid:   { label: "MOONKID",  cls: "title-moonkid",   gradient: "#6366f1", textColor: "#fff" },
+  ranger:    { label: "RANGER",   cls: "title-ranger",    gradient: "linear-gradient(90deg, #16a34a, #22c55e)", textColor: "#fff" },
+  artisan:   { label: "ARTISAN",  cls: "title-artisan",   gradient: "linear-gradient(90deg, #0891b2, #06b6d4)", textColor: "#fff" },
+  scholar:   { label: "SCHOLAR",  cls: "title-scholar",   gradient: "linear-gradient(90deg, #4f46e5, #6366f1)", textColor: "#fff" },
+  tactician: { label: "TACTICIAN",cls: "title-tactician", gradient: "linear-gradient(90deg, #1d4ed8, #0ea5e9)", textColor: "#fff" },
+  envoy:     { label: "ENVOY",    cls: "title-envoy",     gradient: "linear-gradient(90deg, #0f766e, #14b8a6)", textColor: "#fff" },
+  sentinel:  { label: "SENTINEL", cls: "title-sentinel",  gradient: "linear-gradient(90deg, #475569, #334155)", textColor: "#fff" },
+  pathfinder:{ label: "PATHFINDER", cls: "title-pathfinder", gradient: "linear-gradient(90deg, #65a30d, #16a34a)", textColor: "#fff" },
+  trailblazer:{ label: "TRAILBLAZER", cls: "title-trailblazer", gradient: "linear-gradient(90deg, #b45309, #f97316)", textColor: "#fff" },
+  whisper:   { label: "WHISPER",  cls: "title-whisper",   gradient: "linear-gradient(90deg, #7c3aed, #a855f7)", textColor: "#fff" },
+  voyager:   { label: "VOYAGER",  cls: "title-voyager",   gradient: "linear-gradient(90deg, #0284c7, #22d3ee)", textColor: "#fff" },
+  striker:   { label: "STRIKER",  cls: "title-striker",   gradient: "linear-gradient(90deg, #dc2626, #f97316)", textColor: "#fff" },
+  strategist:{ label: "STRATEGIST", cls: "title-strategist", gradient: "linear-gradient(90deg, #4338ca, #6366f1)", textColor: "#fff" },
+  alchemist: { label: "ALCHEMIST", cls: "title-alchemist", gradient: "linear-gradient(90deg, #0d9488, #22c55e)", textColor: "#fff" },
+  warden:    { label: "WARDEN",   cls: "title-warden",    gradient: "linear-gradient(90deg, #374151, #111827)", textColor: "#fff" },
 };
+
+// SHOP CONFIG
+// Keep shop edits simple: update price/rarity/tags directly in these two catalogs.
+const GRADIENT_THEMES = {
+  aurora:      { name: "Aurora",      gradient: "linear-gradient(135deg, #22d3ee, #3b82f6, #7c3aed)", textColor: "#fff", rarity: "Rare",      tags: ["sky"],        price: 44 },
+  ember:       { name: "Ember",       gradient: "linear-gradient(135deg, #f97316, #ef4444, #b91c1c)", textColor: "#fff", rarity: "Uncommon",  tags: ["fire"],       price: 32 },
+  jungle:      { name: "Jungle",      gradient: "linear-gradient(135deg, #22c55e, #15803d, #14532d)", textColor: "#fff", rarity: "Uncommon",  tags: ["nature"],     price: 30 },
+  solar:       { name: "Solar",       gradient: "linear-gradient(135deg, #f59e0b, #f97316, #f43f5e)", textColor: "#fff", rarity: "Rare",      tags: ["sun"],        price: 42 },
+  frost:       { name: "Frost",       gradient: "linear-gradient(135deg, #0ea5e9, #06b6d4, #6366f1)", textColor: "#fff", rarity: "Uncommon",  tags: ["ice"],        price: 31 },
+  eclipse:     { name: "Eclipse",     gradient: "linear-gradient(135deg, #334155, #0f172a, #4c1d95)", textColor: "#fff", rarity: "Epic",      tags: ["dark"],       price: 58 },
+  nebula:      { name: "Nebula",      gradient: "linear-gradient(135deg, #9333ea, #3b82f6, #06b6d4)", textColor: "#fff", rarity: "Rare",      tags: ["space"],      price: 45 },
+  comet:       { name: "Comet",       gradient: "linear-gradient(135deg, #f59e0b, #ef4444, #7c3aed)", textColor: "#fff", rarity: "Rare",      tags: ["space"],      price: 46 },
+  moonlit:     { name: "Moonlit",     gradient: "linear-gradient(135deg, #1e293b, #312e81, #38bdf8)", textColor: "#fff", rarity: "Uncommon",  tags: ["night"],      price: 34 },
+  starlight:   { name: "Starlight",   gradient: "linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899)", textColor: "#fff", rarity: "Rare",      tags: ["night"],      price: 43 },
+  inferno:     { name: "Inferno",     gradient: "linear-gradient(135deg, #7f1d1d, #dc2626, #f97316)", textColor: "#fff", rarity: "Epic",      tags: ["fire"],       price: 60 },
+  magma:       { name: "Magma",       gradient: "linear-gradient(135deg, #991b1b, #ef4444, #f59e0b)", textColor: "#fff", rarity: "Rare",      tags: ["fire"],       price: 47 },
+  tide:        { name: "Tide",        gradient: "linear-gradient(135deg, #0891b2, #0ea5e9, #1d4ed8)", textColor: "#fff", rarity: "Uncommon",  tags: ["water"],      price: 33 },
+  abyss:       { name: "Abyss",       gradient: "linear-gradient(135deg, #0f172a, #1e3a8a, #06b6d4)", textColor: "#fff", rarity: "Epic",      tags: ["water"],      price: 59 },
+  reef:        { name: "Reef",        gradient: "linear-gradient(135deg, #14b8a6, #22c55e, #0ea5e9)", textColor: "#fff", rarity: "Uncommon",  tags: ["water"],      price: 29 },
+  storm:       { name: "Storm",       gradient: "linear-gradient(135deg, #1e3a8a, #4f46e5, #64748b)", textColor: "#fff", rarity: "Rare",      tags: ["weather"],    price: 41 },
+  thunder:     { name: "Thunder",     gradient: "linear-gradient(135deg, #111827, #4c1d95, #f59e0b)", textColor: "#fff", rarity: "Epic",      tags: ["weather"],    price: 61 },
+  dawn:        { name: "Dawn",        gradient: "linear-gradient(135deg, #fb7185, #f59e0b, #fde68a)", textColor: "#fff", rarity: "Common",    tags: ["sky"],        price: 22 },
+  dusk:        { name: "Dusk",        gradient: "linear-gradient(135deg, #312e81, #7c3aed, #f43f5e)", textColor: "#fff", rarity: "Uncommon",  tags: ["sky"],        price: 36 },
+  horizon:     { name: "Horizon",     gradient: "linear-gradient(135deg, #0ea5e9, #f59e0b, #fb7185)", textColor: "#fff", rarity: "Common",    tags: ["sky"],        price: 24 },
+  sakura:      { name: "Sakura",      gradient: "linear-gradient(135deg, #f9a8d4, #fda4af, #fb7185)", textColor: "#fff", rarity: "Uncommon",  tags: ["floral"],     price: 28 },
+  meadow:      { name: "Meadow",      gradient: "linear-gradient(135deg, #86efac, #22c55e, #84cc16)", textColor: "#fff", rarity: "Common",    tags: ["nature"],     price: 20 },
+  pine:        { name: "Pine",        gradient: "linear-gradient(135deg, #166534, #15803d, #14532d)", textColor: "#fff", rarity: "Common",    tags: ["nature"],     price: 19 },
+  blossom:     { name: "Blossom",     gradient: "linear-gradient(135deg, #f472b6, #ec4899, #c026d3)", textColor: "#fff", rarity: "Rare",      tags: ["floral"],     price: 40 },
+  zen:         { name: "Zen",         gradient: "linear-gradient(135deg, #64748b, #94a3b8, #cbd5e1)", textColor: "#0f172a", rarity: "Common", tags: ["minimal"],    price: 18 },
+  mono:        { name: "Mono",        gradient: "linear-gradient(135deg, #0f172a, #334155, #94a3b8)", textColor: "#fff", rarity: "Common",    tags: ["minimal"],    price: 18 },
+  candy:       { name: "Candy",       gradient: "linear-gradient(135deg, #f472b6, #a78bfa, #60a5fa)", textColor: "#fff", rarity: "Uncommon",  tags: ["sweet"],      price: 27 },
+  peach:       { name: "Peach",       gradient: "linear-gradient(135deg, #fdba74, #fb7185, #fda4af)", textColor: "#fff", rarity: "Common",    tags: ["sweet"],      price: 21 },
+  mint:        { name: "Mint",        gradient: "linear-gradient(135deg, #5eead4, #34d399, #22c55e)", textColor: "#052e16", rarity: "Common", tags: ["fresh"],     price: 20 },
+  grape:       { name: "Grape",       gradient: "linear-gradient(135deg, #8b5cf6, #7c3aed, #4c1d95)", textColor: "#fff", rarity: "Uncommon",  tags: ["sweet"],      price: 26 },
+  cyber:       { name: "Cyber",       gradient: "linear-gradient(135deg, #06b6d4, #0ea5e9, #6366f1)", textColor: "#fff", rarity: "Rare",      tags: ["tech"],       price: 44 },
+  matrix:      { name: "Matrix",      gradient: "linear-gradient(135deg, #052e16, #166534, #22c55e)", textColor: "#d9f99d", rarity: "Rare",    tags: ["tech"],       price: 42 },
+  arcade:      { name: "Arcade",      gradient: "linear-gradient(135deg, #7c3aed, #2563eb, #06b6d4)", textColor: "#fff", rarity: "Epic",      tags: ["retro"],      price: 57 },
+  vaporwave:   { name: "Vaporwave",   gradient: "linear-gradient(135deg, #ec4899, #8b5cf6, #38bdf8)", textColor: "#fff", rarity: "Epic",      tags: ["retro"],      price: 62 },
+  bronze:      { name: "Bronze",      gradient: "linear-gradient(135deg, #a16207, #b45309, #d97706)", textColor: "#fff", rarity: "Common",    tags: ["metal"],      price: 20 },
+  silver:      { name: "Silver",      gradient: "linear-gradient(135deg, #64748b, #94a3b8, #e2e8f0)", textColor: "#0f172a", rarity: "Uncommon", tags: ["metal"],    price: 30 },
+  gold:        { name: "Gold",        gradient: "linear-gradient(135deg, #f59e0b, #fbbf24, #fef08a)", textColor: "#422006", rarity: "Rare",   tags: ["metal"],      price: 46 },
+  obsidian:    { name: "Obsidian",    gradient: "linear-gradient(135deg, #020617, #111827, #1f2937)", textColor: "#e5e7eb", rarity: "Rare",   tags: ["dark"],       price: 48 },
+  prism:       { name: "Prism",       gradient: "linear-gradient(135deg, #ef4444, #f59e0b, #22c55e, #06b6d4, #8b5cf6)", textColor: "#fff", rarity: "Legendary", tags: ["rainbow"], price: 78 },
+  void:        { name: "Void",        gradient: "linear-gradient(135deg, #000000, #111827, #312e81)", textColor: "#fff", rarity: "Legendary", tags: ["dark"],    price: 82 },
+  celestial:   { name: "Celestial",   gradient: "linear-gradient(135deg, #312e81, #2563eb, #0ea5e9, #22d3ee)", textColor: "#fff", rarity: "Legendary", tags: ["space"], price: 84 },
+  royal:       { name: "Royal",       gradient: "linear-gradient(135deg, #1d4ed8, #7c3aed, #a855f7)", textColor: "#fff", rarity: "Epic",      tags: ["premium"],    price: 63 },
+  phantom:     { name: "Phantom",     gradient: "linear-gradient(135deg, #111827, #4c1d95, #db2777)", textColor: "#fff", rarity: "Epic",      tags: ["dark"],       price: 64 },
+  glacier:     { name: "Glacier",     gradient: "linear-gradient(135deg, #e0f2fe, #7dd3fc, #0ea5e9)", textColor: "#082f49", rarity: "Uncommon", tags: ["ice"],     price: 32 },
+  lavaflow:    { name: "Lavaflow",    gradient: "linear-gradient(135deg, #7f1d1d, #ef4444, #facc15)", textColor: "#fff", rarity: "Epic",      tags: ["fire"],       price: 66 },
+};
+
+const SHOP_TITLE_CATALOG = [
+  { key: "new",      rarity: "Common",    tags: ["starter"],  price: 5 },
+  { key: "verified", rarity: "Common",    tags: ["status"],   price: 10 },
+  { key: "scout",    rarity: "Common",    tags: ["starter"],  price: 6 },
+  { key: "villager", rarity: "Common",    tags: ["starter"],  price: 6 },
+  { key: "traveler", rarity: "Common",    tags: ["starter"],  price: 7 },
+  { key: "rookie",   rarity: "Common",    tags: ["starter"],  price: 6 },
+  { key: "thinker",  rarity: "Common",    tags: ["mind"],     price: 7 },
+  { key: "helper",   rarity: "Common",    tags: ["social"],   price: 7 },
+  { key: "buddy",    rarity: "Common",    tags: ["social"],   price: 6 },
+  { key: "chatter",  rarity: "Common",    tags: ["social"],   price: 7 },
+  { key: "sprout",   rarity: "Common",    tags: ["nature"],   price: 6 },
+  { key: "breeze",   rarity: "Common",    tags: ["nature"],   price: 6 },
+  { key: "emberling",rarity: "Common",    tags: ["fire"],     price: 7 },
+  { key: "moonkid",  rarity: "Common",    tags: ["night"],    price: 7 },
+  { key: "pro",      rarity: "Uncommon",  tags: ["status"],   price: 25 },
+  { key: "ranger",   rarity: "Uncommon",  tags: ["rank"],     price: 18 },
+  { key: "artisan",  rarity: "Uncommon",  tags: ["craft"],    price: 18 },
+  { key: "scholar",  rarity: "Uncommon",  tags: ["mind"],     price: 19 },
+  { key: "tactician",rarity: "Uncommon",  tags: ["mind"],     price: 19 },
+  { key: "envoy",    rarity: "Uncommon",  tags: ["social"],   price: 18 },
+  { key: "sentinel", rarity: "Uncommon",  tags: ["guard"],    price: 20 },
+  { key: "pathfinder", rarity: "Uncommon", tags: ["adventure"], price: 19 },
+  { key: "trailblazer", rarity: "Uncommon", tags: ["adventure"], price: 20 },
+  { key: "whisper",  rarity: "Uncommon",  tags: ["mystic"],   price: 19 },
+  { key: "voyager",  rarity: "Uncommon",  tags: ["adventure"], price: 19 },
+  { key: "striker",  rarity: "Uncommon",  tags: ["rank"],     price: 20 },
+  { key: "strategist", rarity: "Uncommon", tags: ["mind"],     price: 20 },
+  { key: "alchemist", rarity: "Uncommon", tags: ["mystic"],   price: 20 },
+  { key: "warden",   rarity: "Uncommon",  tags: ["guard"],    price: 20 },
+  { key: "vip",      rarity: "Rare",      tags: ["premium"],  price: 50 },
+  { key: "elite",    rarity: "Rare",      tags: ["rank"],     price: 75 },
+  { key: "founder",  rarity: "Legendary", tags: ["legacy"],   price: 10000 },
+  { key: "legend",   rarity: "Epic",      tags: ["mythic"],   price: 100 },
+  { key: "champion", rarity: "Rare",      tags: ["rank"],     price: 75 },
+  { key: "sage",     rarity: "Rare",      tags: ["wisdom"],   price: 50 },
+  { key: "mythic",   rarity: "Epic",      tags: ["mythic"],   price: 100 },
+  { key: "guardian", rarity: "Epic",      tags: ["defense"],  price: 100 },
+  { key: "pioneer",  rarity: "Rare",      tags: ["legacy"],   price: 50 },
+  { key: "titan",    rarity: "Legendary", tags: ["power"],    price: 1000 },
+  { key: "oracle",   rarity: "Epic",      tags: ["mystic"],   price: 100 },
+  { key: "nova",     rarity: "Epic",      tags: ["space"],    price: 125 },
+  { key: "og",       rarity: "Uncommon",  tags: ["legacy"],   price: 15 },
+  { key: "staff",    rarity: "Rare",      tags: ["service"],  price: 1000 },
+  { key: "mod",      rarity: "Legendary", tags: ["service"],  price: 2500 },
+  { key: "dev",      rarity: "Legendary", tags: ["builder"],  price: 5000 },
+  { key: "creator",  rarity: "Legendary", tags: ["creator"],  price: 1000 },
+];
+
+function dayKeyUTC(ts) {
+  const d = new Date(ts || Date.now());
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+function randomSample(list, count) {
+  const arr = [...list];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, count);
+}
+
+function gradientMetaFor(themeKey) {
+  if (!themeKey) return null;
+  const t = GRADIENT_THEMES[themeKey];
+  return t ? { theme: themeKey, ...t } : null;
+}
+
+function getInventoryState(username) {
+  const ownedTitles = store.getOwnedTitles(username);
+  const activeTitle = store.getTitle(username);
+  const titlesSet = new Set(ownedTitles);
+  if (activeTitle) titlesSet.add(activeTitle);
+
+  const titles = [...titlesSet]
+    .filter((k) => store.VALID_TITLES.includes(k))
+    .map((k) => ({
+      key: k,
+      label: (TITLE_META[k] && TITLE_META[k].label) || k.toUpperCase(),
+      rarity: (SHOP_TITLE_CATALOG.find((x) => x.key === k) || {}).rarity || "Common",
+      tags: (SHOP_TITLE_CATALOG.find((x) => x.key === k) || {}).tags || [],
+      meta: titleMetaFor(k),
+    }));
+
+  return {
+    ownedGradientThemes: store.getOwnedGradientThemes(username),
+    activeGradientTheme: store.getActiveGradientTheme(username),
+    gradientThemes: GRADIENT_THEMES,
+    ownedTitles: titles,
+    activeTitle: activeTitle || null,
+  };
+}
+
+function buildOrGetDailyShop(username) {
+  const today = dayKeyUTC(Date.now());
+  const current = store.getDailyShop(username);
+  if (current && current.dayKey === today && Array.isArray(current.items)) return current;
+
+  const candidates = [];
+  for (const [key, meta] of Object.entries(GRADIENT_THEMES)) {
+    candidates.push({
+      type: "theme",
+      key,
+      name: meta.name,
+      price: Number(meta.price) || 25,
+      rarity: meta.rarity || "Common",
+      tags: Array.isArray(meta.tags) ? meta.tags : [],
+    });
+  }
+  for (const t of SHOP_TITLE_CATALOG) {
+    if (!t || !t.key || !store.VALID_TITLES.includes(t.key)) continue;
+    const label = (TITLE_META[t.key] && TITLE_META[t.key].label) || t.key.toUpperCase();
+    candidates.push({
+      type: "title",
+      key: t.key,
+      name: label,
+      price: Number(t.price) || 20,
+      rarity: t.rarity || "Common",
+      tags: Array.isArray(t.tags) ? t.tags : [],
+    });
+  }
+
+  const items = randomSample(candidates, 3).map((it, idx) => ({
+    id: `${today}-${idx + 1}-${it.type}-${it.key}`,
+    type: it.type,
+    key: it.key,
+    name: it.name,
+    price: it.price,
+    rarity: it.rarity,
+    tags: it.tags,
+    stock: 1,
+  }));
+  const next = { dayKey: today, items };
+  store.setDailyShop(username, next);
+  return next;
+}
 
 function titleMetaFor(title) {
   return title && TITLE_META[title] ? TITLE_META[title] : null;
@@ -140,7 +357,9 @@ function titleMetaFor(title) {
 function hydrateMessagesWithTitleMeta(messages) {
   return (messages || []).map((m) => {
     const t = m.title || (m.user ? store.getTitle(m.user) : null) || null;
-    return { ...m, title: t, titleMeta: titleMetaFor(t) };
+    const gt = m.gradientTheme || (m.user ? store.getActiveGradientTheme(m.user) : null) || null;
+    const tm = titleMetaFor(t);
+    return { ...m, title: t, titleMeta: tm, gradientTheme: gt, gradientMeta: gradientMetaFor(gt) || tm };
   });
 }
 
@@ -436,6 +655,9 @@ io.on("connection", (socket) => {
       missedMentions: store.getMissedMentions(name),
       title: store.getTitle(name),
       titleMeta: titleMetaFor(store.getTitle(name)),
+      ownedGradientThemes: store.getOwnedGradientThemes(name),
+      activeGradientTheme: store.getActiveGradientTheme(name),
+      ownedTitles: store.getOwnedTitles(name),
     });
     store.clearMissedMentions(name);
     io.emit("online-users", getOnlineUsers());
@@ -531,6 +753,7 @@ io.on("connection", (socket) => {
     if (t !== null && !store.VALID_TITLES.includes(t)) {
       socket.emit("admin-action-result", { ok: false, message: "Invalid title." }); return;
     }
+    if (t) store.addOwnedTitle(handle, t);
     store.setTitle(handle, t);
     // Notify the target user if online
     const targetSockets = [...io.sockets.sockets.values()].filter((s) => s.username === handle);
@@ -541,6 +764,19 @@ io.on("connection", (socket) => {
 
   // Admin: get all users list
   socket.on("admin-get-users", () => {
+    if (!socket.username || socket.username !== ADMIN_HANDLE) return;
+    const allUsers = store.getAllUsers();
+    socket.emit("admin-users-list", allUsers.map((u) => ({
+      handle: u.handle || u.username || u,
+      displayName: store.getDisplayName(u.handle || u.username || u),
+      tokens: store.getTokens(u.handle || u.username || u),
+      title: store.getTitle(u.handle || u.username || u),
+      titleMeta: titleMetaFor(store.getTitle(u.handle || u.username || u)),
+    })));
+  });
+
+  // Backward-compatible alias for older clients
+  socket.on("admin-get-all-users", () => {
     if (!socket.username || socket.username !== ADMIN_HANDLE) return;
     const allUsers = store.getAllUsers();
     socket.emit("admin-users-list", allUsers.map((u) => ({
@@ -813,14 +1049,19 @@ io.on("connection", (socket) => {
       store.setGroupLastActivity(gName, Date.now());
     }
 
+    const msgTitle = store.getTitle(socket.username);
+    const msgTitleMeta = titleMetaFor(msgTitle);
+    const activeTheme = store.getActiveGradientTheme(socket.username);
     const msg = {
       id: `${Date.now()}-${socket.id}`,
       type: "chat",
       channelId,
       user: socket.username,
       displayName: socket.displayName || socket.username,
-      title: store.getTitle(socket.username),
-      titleMeta: titleMetaFor(store.getTitle(socket.username)),
+      title: msgTitle,
+      titleMeta: msgTitleMeta,
+      gradientTheme: activeTheme,
+      gradientMeta: gradientMetaFor(activeTheme) || msgTitleMeta,
       text: body,
       time: new Date().toISOString(),
     };
@@ -1373,6 +1614,160 @@ io.on("connection", (socket) => {
       tokens: store.getTokens(socket.username),
       nextTokenAt: newNextAt,
       message: "+1 token claimed! 🪙",
+    });
+  });
+
+  socket.on("shop-open", () => {
+    if (!socket.username) return;
+    const shop = buildOrGetDailyShop(socket.username);
+    socket.emit("shop-state", {
+      dayKey: shop.dayKey,
+      items: shop.items,
+      tokens: store.getTokens(socket.username),
+      ...getInventoryState(socket.username),
+    });
+  });
+
+  socket.on("inventory-open", () => {
+    if (!socket.username) return;
+    socket.emit("inventory-state", {
+      tokens: store.getTokens(socket.username),
+      ...getInventoryState(socket.username),
+    });
+  });
+
+  socket.on("shop-buy", ({ itemId }) => {
+    if (!socket.username || !itemId) return;
+    const shop = buildOrGetDailyShop(socket.username);
+    const idx = (shop.items || []).findIndex((x) => x.id === itemId);
+    if (idx === -1) {
+      socket.emit("shop-result", { ok: false, message: "That item is no longer available." });
+      return;
+    }
+    const item = shop.items[idx];
+    if (!item || item.stock <= 0) {
+      socket.emit("shop-result", { ok: false, message: "Out of stock." });
+      return;
+    }
+    const bal = store.getTokens(socket.username);
+    if (bal < item.price) {
+      socket.emit("shop-result", { ok: false, message: `Need ${item.price} tokens, you have ${bal}.` });
+      return;
+    }
+
+    if (item.type === "theme") {
+      const already = store.getOwnedGradientThemes(socket.username);
+      if (already.includes(item.key)) {
+        socket.emit("shop-result", { ok: false, message: "You already own that gradient theme." });
+        return;
+      }
+      store.addOwnedGradientTheme(socket.username, item.key);
+      store.setActiveGradientTheme(socket.username, item.key);
+    } else if (item.type === "title") {
+      if (!store.VALID_TITLES.includes(item.key)) {
+        socket.emit("shop-result", { ok: false, message: "That title is invalid." });
+        return;
+      }
+      store.addOwnedTitle(socket.username, item.key);
+      store.setTitle(socket.username, item.key);
+      socket.emit("title-updated", { title: item.key, titleMeta: titleMetaFor(item.key) });
+      io.emit("online-users", getOnlineUsers());
+    } else {
+      socket.emit("shop-result", { ok: false, message: "Unknown shop item." });
+      return;
+    }
+
+    store.setTokens(socket.username, roundTokens(bal - item.price));
+    item.stock = 0;
+    store.setDailyShop(socket.username, shop);
+
+    socket.emit("shop-result", { ok: true, message: `Purchased ${item.name} for ${item.price} tokens.` });
+    emitTokenUpdate(socket.username, null);
+    socket.emit("shop-state", {
+      dayKey: shop.dayKey,
+      items: shop.items,
+      tokens: store.getTokens(socket.username),
+      ...getInventoryState(socket.username),
+    });
+  });
+
+  socket.on("shop-set-theme", ({ themeKey }) => {
+    if (!socket.username) return;
+    const k = String(themeKey || "").trim().toLowerCase();
+    if (!k) {
+      store.setActiveGradientTheme(socket.username, null);
+      socket.emit("gradient-theme-updated", { activeGradientTheme: null });
+      return;
+    }
+    if (!GRADIENT_THEMES[k]) {
+      socket.emit("shop-result", { ok: false, message: "Unknown theme." });
+      return;
+    }
+    const owned = store.getOwnedGradientThemes(socket.username);
+    if (!owned.includes(k)) {
+      socket.emit("shop-result", { ok: false, message: "You do not own that theme yet." });
+      return;
+    }
+    store.setActiveGradientTheme(socket.username, k);
+    socket.emit("gradient-theme-updated", { activeGradientTheme: k });
+    socket.emit("shop-result", { ok: true, message: `Equipped ${GRADIENT_THEMES[k].name}.` });
+    socket.emit("inventory-state", {
+      tokens: store.getTokens(socket.username),
+      ...getInventoryState(socket.username),
+    });
+  });
+
+  socket.on("inventory-set-theme", ({ themeKey }) => {
+    if (!socket.username) return;
+    const k = String(themeKey || "").trim().toLowerCase();
+    if (!k) {
+      store.setActiveGradientTheme(socket.username, null);
+      socket.emit("gradient-theme-updated", { activeGradientTheme: null });
+      socket.emit("inventory-state", {
+        tokens: store.getTokens(socket.username),
+        ...getInventoryState(socket.username),
+      });
+      return;
+    }
+    if (!GRADIENT_THEMES[k]) {
+      socket.emit("inventory-result", { ok: false, message: "Unknown theme." });
+      return;
+    }
+    const owned = store.getOwnedGradientThemes(socket.username);
+    if (!owned.includes(k)) {
+      socket.emit("inventory-result", { ok: false, message: "You do not own that theme." });
+      return;
+    }
+    store.setActiveGradientTheme(socket.username, k);
+    socket.emit("gradient-theme-updated", { activeGradientTheme: k });
+    socket.emit("inventory-result", { ok: true, message: `Equipped ${GRADIENT_THEMES[k].name}.` });
+    socket.emit("inventory-state", {
+      tokens: store.getTokens(socket.username),
+      ...getInventoryState(socket.username),
+    });
+  });
+
+  socket.on("inventory-use-title", ({ titleKey }) => {
+    if (!socket.username) return;
+    const t = String(titleKey || "").trim().toLowerCase();
+    if (!t || !store.VALID_TITLES.includes(t)) {
+      socket.emit("inventory-result", { ok: false, message: "Invalid title." });
+      return;
+    }
+    const owned = new Set(store.getOwnedTitles(socket.username));
+    const current = store.getTitle(socket.username);
+    if (current) owned.add(current);
+    if (!owned.has(t)) {
+      socket.emit("inventory-result", { ok: false, message: "You do not own that title." });
+      return;
+    }
+    store.setTitle(socket.username, t);
+    socket.emit("title-updated", { title: t, titleMeta: titleMetaFor(t) });
+    io.emit("online-users", getOnlineUsers());
+    socket.emit("inventory-result", { ok: true, message: `Using title ${t}.` });
+    socket.emit("inventory-state", {
+      tokens: store.getTokens(socket.username),
+      ...getInventoryState(socket.username),
     });
   });
 

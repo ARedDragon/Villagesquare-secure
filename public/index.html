@@ -91,6 +91,8 @@
             <button id="claim-token-btn" type="button" class="claim-token-btn hidden" title="Claim your hourly token">Claim &#x1FA99;</button>
             <span id="token-timer" class="token-timer hidden"><span id="token-timer-label">--:--</span></span>
             <button id="theme-btn" type="button" class="icon-btn" title="Change theme">&#x1F3A8;</button>
+            <button id="shop-btn" type="button" class="icon-btn" title="Open shop">&#x1F6D2;</button>
+            <button id="inventory-btn" type="button" class="icon-btn" title="Open inventory">&#x1F4E6;</button>
             <button id="sign-out-btn" type="button" class="icon-btn" title="Sign out">&#x21A9;</button>
           </div>
         </div>
@@ -538,6 +540,38 @@
         <div id="admin-msg-panel" class="admin-msg-panel"></div>
       </div>
       <p id="admin-result-msg" class="admin-result-msg hidden"></p>
+    </div>
+  </div>
+
+  <!-- Shop modal -->
+  <div id="shop-modal" class="modal hidden" role="dialog" aria-labelledby="shop-modal-title">
+    <div class="modal-card shop-modal-card">
+      <header class="modal-head">
+        <h2 id="shop-modal-title">&#x1F6D2; Daily Shop</h2>
+        <button id="close-shop-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <p id="shop-day-label" class="modal-hint">Daily stock refreshes once per day.</p>
+      <p id="shop-balance-label" class="modal-hint"></p>
+      <div id="shop-items" class="shop-items"></div>
+      <p class="modal-hint" style="margin-top:0.75rem">Owned gradient themes</p>
+      <div id="shop-owned-themes" class="shop-owned-themes"></div>
+      <p id="shop-result" class="shop-result hidden"></p>
+    </div>
+  </div>
+
+  <!-- Inventory modal -->
+  <div id="inventory-modal" class="modal hidden" role="dialog" aria-labelledby="inventory-modal-title">
+    <div class="modal-card shop-modal-card">
+      <header class="modal-head">
+        <h2 id="inventory-modal-title">&#x1F4E6; Inventory</h2>
+        <button id="close-inventory-btn" type="button" class="icon-btn" aria-label="Close">&times;</button>
+      </header>
+      <p id="inventory-balance-label" class="modal-hint"></p>
+      <p class="modal-hint" style="margin-top:0.35rem">Owned themes</p>
+      <div id="inventory-themes" class="shop-owned-themes"></div>
+      <p class="modal-hint" style="margin-top:0.75rem">Owned titles</p>
+      <div id="inventory-titles" class="shop-items"></div>
+      <p id="inventory-result" class="shop-result hidden"></p>
     </div>
   </div>
 

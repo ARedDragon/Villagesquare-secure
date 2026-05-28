@@ -75,6 +75,8 @@ const gsBlacklistInput = document.getElementById("gs-blacklist-input");
 const gsBlacklistAddBtn = document.getElementById("gs-blacklist-add-btn");
 const gsError = document.getElementById("gs-error");
 const themeBtn = document.getElementById("theme-btn");
+const shopBtn = document.getElementById("shop-btn");
+const inventoryBtn = document.getElementById("inventory-btn");
 const tokenDisplay = document.getElementById("token-display");
 const tokenCount = document.getElementById("token-count");
 const claimTokenBtn = document.getElementById("claim-token-btn");
@@ -115,6 +117,19 @@ const typeracePhrase = document.getElementById("typerace-phrase");
 const typeraceInput = document.getElementById("typerace-input");
 const typeraceSubmitBtn = document.getElementById("typerace-submit-btn");
 const typeraceFeedback = document.getElementById("typerace-feedback");
+const shopModal = document.getElementById("shop-modal");
+const closeShopBtn = document.getElementById("close-shop-btn");
+const shopDayLabel = document.getElementById("shop-day-label");
+const shopBalanceLabel = document.getElementById("shop-balance-label");
+const shopItemsEl = document.getElementById("shop-items");
+const shopOwnedThemesEl = document.getElementById("shop-owned-themes");
+const shopResultEl = document.getElementById("shop-result");
+const inventoryModal = document.getElementById("inventory-modal");
+const closeInventoryBtn = document.getElementById("close-inventory-btn");
+const inventoryBalanceLabel = document.getElementById("inventory-balance-label");
+const inventoryThemesEl = document.getElementById("inventory-themes");
+const inventoryTitlesEl = document.getElementById("inventory-titles");
+const inventoryResultEl = document.getElementById("inventory-result");
 
 // ── Mentions banner ───────────────────────────────────────────────
 const mentionsBanner = document.getElementById("mentions-banner");
@@ -146,6 +161,13 @@ let friendRequests = [];
 let sentFriendRequests = [];
 let friendDisplayNames = {}; // handle.lower() -> displayName for offline friends
 let myTokens = 0;
+let ownedGradientThemes = [];
+let activeGradientTheme = null;
+let gradientThemesMeta = {};
+let ownedTitles = [];
+let activeTitle = null;
+let shopDayKey = "";
+let shopItems = [];
 let nextTokenAt = 0;
 let tokenTimerInterval = null;
 let _connectFallback = null;
@@ -549,6 +571,179 @@ function startTokenTimer(nextAt) {
   tokenTimerInterval = setInterval(updateTimerDisplay, 1000);
 }
 
+function showShopResult(msg, ok) {
+  if (!shopResultEl) return;
+  if (!msg) {
+    shopResultEl.classList.add("hidden");
+    shopResultEl.textContent = "";
+    return;
+  }
+  shopResultEl.textContent = msg;
+  shopResultEl.className = "shop-result " + (ok ? "ok" : "fail");
+  shopResultEl.classList.remove("hidden");
+}
+
+function renderShop() {
+  if (!shopItemsEl) return;
+  if (shopBalanceLabel) shopBalanceLabel.textContent = `Balance: ${myTokens} tokens`;
+  if (shopDayLabel) shopDayLabel.textContent = shopDayKey
+    ? `Daily stock for ${shopDayKey} (3 items, 1 stock each).`
+    : "Daily stock refreshes once per day.";
+
+  if (!shopItems || !shopItems.length) {
+    shopItemsEl.innerHTML = "<p class='empty-hint'>No items available today.</p>";
+    return;
+  }
+
+  shopItemsEl.innerHTML = shopItems.map((item) => {
+    const soldOut = item.stock <= 0;
+    const owned = item.type === "theme" && ownedGradientThemes.includes(item.key);
+    const actionLabel = soldOut ? "Sold Out" : (owned ? "Owned" : `Buy (${item.price} 🪙)`);
+    const disabled = soldOut || owned || myTokens < item.price;
+    const tone = item.type === "theme" ? "theme" : "title";
+    const rarity = item.rarity || "Common";
+    const rarityClass = String(rarity).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const tags = Array.isArray(item.tags) ? item.tags : [];
+    const pillHtml =
+      `<span class="shop-pill rarity rarity-${escapeAttr(rarityClass)}">${escapeHtml(rarity)}</span>` +
+      tags.slice(0, 3).map((t) => `<span class="shop-pill tag">${escapeHtml(t)}</span>`).join("");
+    return `<div class="shop-item ${tone}">
+      <div class="shop-item-main">
+        <strong>${escapeHtml(item.name)}</strong>
+        <span class="shop-item-sub">${escapeHtml(item.type)} • stock: ${item.stock}</span>
+        <span class="shop-pills">${pillHtml}</span>
+      </div>
+      <button type="button" class="modal-primary small shop-buy-btn" data-itemid="${escapeAttr(item.id)}"${disabled ? " disabled" : ""}>${escapeHtml(actionLabel)}</button>
+    </div>`;
+  }).join("");
+
+  shopItemsEl.querySelectorAll(".shop-buy-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!socket) return;
+      const id = btn.dataset.itemid;
+      if (!id) return;
+      socket.emit("shop-buy", { itemId: id });
+    });
+  });
+
+  if (shopOwnedThemesEl) {
+    const owned = Array.isArray(ownedGradientThemes) ? ownedGradientThemes : [];
+    if (!owned.length) {
+      shopOwnedThemesEl.innerHTML = "<p class='empty-hint'>No owned gradient themes yet.</p>";
+    } else {
+      shopOwnedThemesEl.innerHTML = owned.map((k) => {
+        const meta = gradientThemesMeta[k] || { name: k, gradient: "var(--surface2)" };
+        const active = activeGradientTheme === k;
+        return `<button type="button" class="shop-theme-chip${active ? " active" : ""}" data-themekey="${escapeAttr(k)}" style="background:${escapeAttr(meta.gradient || "var(--surface2)")}">${escapeHtml(meta.name || k)}</button>`;
+      }).join("");
+      shopOwnedThemesEl.querySelectorAll(".shop-theme-chip").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (!socket) return;
+          const k = btn.dataset.themekey;
+          if (!k) return;
+          socket.emit("shop-set-theme", { themeKey: k });
+        });
+      });
+    }
+  }
+}
+
+function openShopModal() {
+  if (!shopModal || !socket) return;
+  showShopResult("", true);
+  shopModal.classList.remove("hidden");
+  socket.emit("shop-open");
+}
+
+function closeShopModal() {
+  if (!shopModal) return;
+  shopModal.classList.add("hidden");
+}
+
+function showInventoryResult(msg, ok) {
+  if (!inventoryResultEl) return;
+  if (!msg) {
+    inventoryResultEl.classList.add("hidden");
+    inventoryResultEl.textContent = "";
+    return;
+  }
+  inventoryResultEl.textContent = msg;
+  inventoryResultEl.className = "shop-result " + (ok ? "ok" : "fail");
+  inventoryResultEl.classList.remove("hidden");
+}
+
+function renderInventory() {
+  if (inventoryBalanceLabel) inventoryBalanceLabel.textContent = `Balance: ${myTokens} tokens`;
+
+  if (inventoryThemesEl) {
+    const owned = Array.isArray(ownedGradientThemes) ? ownedGradientThemes : [];
+    if (!owned.length) {
+      inventoryThemesEl.innerHTML = "<p class='empty-hint'>No themes owned yet.</p>";
+    } else {
+      inventoryThemesEl.innerHTML = owned.map((k) => {
+        const meta = gradientThemesMeta[k] || { name: k, gradient: "var(--surface2)" };
+        const active = activeGradientTheme === k;
+        return `<button type="button" class="shop-theme-chip${active ? " active" : ""}" data-themekey="${escapeAttr(k)}" style="background:${escapeAttr(meta.gradient || "var(--surface2)")}">${escapeHtml(meta.name || k)}</button>`;
+      }).join("");
+      inventoryThemesEl.querySelectorAll(".shop-theme-chip").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (!socket) return;
+          const k = btn.dataset.themekey;
+          if (!k) return;
+          socket.emit("inventory-set-theme", { themeKey: k });
+        });
+      });
+    }
+  }
+
+  if (inventoryTitlesEl) {
+    const list = Array.isArray(ownedTitles) ? ownedTitles : [];
+    if (!list.length) {
+      inventoryTitlesEl.innerHTML = "<p class='empty-hint'>No titles owned yet.</p>";
+    } else {
+      inventoryTitlesEl.innerHTML = list.map((t) => {
+        const key = t.key || "";
+        const label = t.label || key;
+        const rarity = t.rarity || "Common";
+        const rarityClass = String(rarity).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const isActive = activeTitle === key;
+        const tags = Array.isArray(t.tags) ? t.tags : [];
+        return `<div class="shop-item title">
+          <div class="shop-item-main">
+            <strong>${escapeHtml(label)}</strong>
+            <span class="shop-item-sub">${escapeHtml(key)}</span>
+            <span class="shop-pills">
+              <span class="shop-pill rarity rarity-${escapeAttr(rarityClass)}">${escapeHtml(rarity)}</span>
+              ${tags.slice(0, 3).map((x) => `<span class="shop-pill tag">${escapeHtml(x)}</span>`).join("")}
+            </span>
+          </div>
+          <button type="button" class="modal-primary small inventory-use-title-btn" data-titlekey="${escapeAttr(key)}"${isActive ? " disabled" : ""}>${isActive ? "Using" : "Use"}</button>
+        </div>`;
+      }).join("");
+      inventoryTitlesEl.querySelectorAll(".inventory-use-title-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (!socket) return;
+          const k = btn.dataset.titlekey;
+          if (!k) return;
+          socket.emit("inventory-use-title", { titleKey: k });
+        });
+      });
+    }
+  }
+}
+
+function openInventoryModal() {
+  if (!inventoryModal || !socket) return;
+  showInventoryResult("", true);
+  inventoryModal.classList.remove("hidden");
+  socket.emit("inventory-open");
+}
+
+function closeInventoryModal() {
+  if (!inventoryModal) return;
+  inventoryModal.classList.add("hidden");
+}
+
 function renderFriendsList() {
   if (!friendsListEl) return;
   friendsListEl.innerHTML = "";
@@ -686,13 +881,18 @@ function renderMessages(channelId) {
       const isMine = msg.user === myName;
       const msgTitle = msg.title || userTitles[msg.user.toLowerCase()] || null;
       const msgTitleMeta = msg.titleMeta || userTitleMeta[msg.user.toLowerCase()] || null;
-      li.className = "msg chat" + (isMine ? " mine" : "") + (isDm ? " dm" : "") + (isMine && msgTitle ? ` mine-${msgTitle}` : "");
+      const msgGradientMeta = msg.gradientMeta || msgTitleMeta || null;
+      li.className = "msg chat" + (isMine ? " mine" : "") + (isDm ? " dm" : "") + (msgTitle ? ` mine-${msgTitle}` : "") + (msgGradientMeta ? " msg-themed" : "");
       const senderLabel = msg.displayName || displayName(msg.user);
       const initial = senderLabel.charAt(0).toUpperCase();
       const filteredText = applyFilter(msg.text);
       const avatarStyle = msgTitleMeta && msgTitleMeta.gradient
         ? ` style="background:${escapeAttr(msgTitleMeta.gradient)}"`
         : "";
+      if (msgGradientMeta && msgGradientMeta.gradient) {
+        li.style.background = msgGradientMeta.gradient;
+        li.style.color = msgGradientMeta.textColor || "#fff";
+      }
       li.innerHTML =
         `<div class="msg-author-row">` +
           `<span class="msg-avatar-sm${msgTitle ? ` avatar-${msgTitle}` : ""}"${avatarStyle}>${escapeHtml(initial)}</span>` +
@@ -810,6 +1010,11 @@ function cacheMessage(msg) {
 
 function handleIncomingMessage(msg) {
   if (messageCache[msg.channelId]?.some((m) => m.id === msg.id)) return;
+  if (msg && msg.user) {
+    const h = msg.user.toLowerCase();
+    if (msg.title) userTitles[h] = msg.title;
+    if (msg.titleMeta) userTitleMeta[h] = msg.titleMeta;
+  }
   if (!chats.some((c) => c.channelId === msg.channelId)) watchChannel(msg.channelId);
   cacheMessage(msg);
   const c = ensureChat(msg.channelId);
@@ -1239,7 +1444,7 @@ async function connect() {
     // Don't disconnect — let user re-submit with their PIN
   });
 
-  socket.on("registered", ({ handle, username, displayName: dn, chats: serverChats, groups, blocked, friends, friendRequests: friendReqs, sentRequests, friendsWithNames, tokens, nextTokenAt: nat, isAdmin: adminFlag, missedMentions, title, titleMeta }) => {
+  socket.on("registered", ({ handle, username, displayName: dn, chats: serverChats, groups, blocked, friends, friendRequests: friendReqs, sentRequests, friendsWithNames, tokens, nextTokenAt: nat, isAdmin: adminFlag, missedMentions, title, titleMeta, ownedGradientThemes: ownedG, activeGradientTheme: activeG, ownedTitles: ownedT }) => {
     myName = handle || username;
     myDisplayName = dn || myName;
     isAdmin = !!adminFlag;
@@ -1262,6 +1467,10 @@ async function connect() {
       for (const f of friendsWithNames) friendDisplayNames[f.handle.toLowerCase()] = f.displayName;
     }
     myTokens = tokens || 0;
+    ownedGradientThemes = Array.isArray(ownedG) ? ownedG : [];
+    activeGradientTheme = activeG || null;
+    ownedTitles = Array.isArray(ownedT) ? ownedT.map((k) => ({ key: k, label: (TITLE_META[k] && TITLE_META[k].label) || String(k).toUpperCase() })) : [];
+    activeTitle = title || null;
     chats = (serverChats || []).map((c) => ({ ...c, unread: 0 }));
     if (!chats.length) {
       ensureChat(roomChannelId("general"));
@@ -1552,7 +1761,47 @@ async function connect() {
     myTokens = tokens;
     if (nat) startTokenTimer(nat);
     updateTokenDisplay();
+    renderShop();
     if (message) showToast(escapeHtml(message));
+  });
+
+  socket.on("shop-state", ({ dayKey, items, tokens, ownedGradientThemes: ownedG, activeGradientTheme: activeG, gradientThemes, ownedTitles: invTitles, activeTitle: invActiveTitle }) => {
+    shopDayKey = dayKey || "";
+    shopItems = Array.isArray(items) ? items : [];
+    if (typeof tokens === "number") myTokens = tokens;
+    ownedGradientThemes = Array.isArray(ownedG) ? ownedG : ownedGradientThemes;
+    activeGradientTheme = activeG || null;
+    gradientThemesMeta = gradientThemes || gradientThemesMeta;
+    if (Array.isArray(invTitles)) ownedTitles = invTitles;
+    if (typeof invActiveTitle !== "undefined") activeTitle = invActiveTitle || null;
+    updateTokenDisplay();
+    renderShop();
+    renderInventory();
+  });
+
+  socket.on("shop-result", ({ ok, message }) => {
+    showShopResult(message || "", !!ok);
+  });
+
+  socket.on("gradient-theme-updated", ({ activeGradientTheme: active }) => {
+    activeGradientTheme = active || null;
+    renderShop();
+    renderInventory();
+  });
+
+  socket.on("inventory-state", ({ tokens, ownedGradientThemes: ownedG, activeGradientTheme: activeG, gradientThemes, ownedTitles: invTitles, activeTitle: invActiveTitle }) => {
+    if (typeof tokens === "number") myTokens = tokens;
+    if (Array.isArray(ownedG)) ownedGradientThemes = ownedG;
+    if (typeof activeG !== "undefined") activeGradientTheme = activeG || null;
+    if (gradientThemes) gradientThemesMeta = gradientThemes;
+    if (Array.isArray(invTitles)) ownedTitles = invTitles;
+    if (typeof invActiveTitle !== "undefined") activeTitle = invActiveTitle || null;
+    updateTokenDisplay();
+    renderInventory();
+  });
+
+  socket.on("inventory-result", ({ ok, message }) => {
+    showInventoryResult(message || "", !!ok);
   });
 
   socket.on("rate-limited", ({ message, cooldownMs }) => {
@@ -1564,6 +1813,8 @@ async function connect() {
   socket.on("title-updated", ({ title, titleMeta }) => {
     if (myName) userTitles[myName.toLowerCase()] = title || null;
     if (myName) userTitleMeta[myName.toLowerCase()] = titleMeta || null;
+    activeTitle = title || null;
+    renderInventory();
     if (activeChannelId) renderMessages(activeChannelId);
   });
 
@@ -1594,7 +1845,7 @@ async function connect() {
     }).join("");
   });
 
-  socket.on("admin-all-users", (users) => {
+  socket.on("admin-users-list", (users) => {
     const list = document.getElementById("admin-users-list");
     if (!list) return;
     if (!users || !users.length) { list.innerHTML = '<li class="empty-hint">No users found.</li>'; return; }
@@ -1621,15 +1872,19 @@ groupsModal.addEventListener("click", (e) => {
 const adminRefreshUsersBtn = document.getElementById("admin-refresh-users-btn");
 if (adminRefreshUsersBtn) {
   adminRefreshUsersBtn.addEventListener("click", () => {
+    if (!requireAdminAction()) return;
     if (!socket) return;
-    socket.emit("admin-get-all-users");
+    socket.emit("admin-get-users");
   });
 }
 
 // Hook into admin tab switching to populate card select and auto-fetch users
 document.querySelectorAll(".tab[data-admintab]").forEach((tab) => {
   tab.addEventListener("click", () => {
-    if (tab.dataset.admintab === "users" && socket) socket.emit("admin-get-all-users");
+    if (tab.dataset.admintab === "users") {
+      if (!requireAdminAction()) return;
+      if (socket) socket.emit("admin-get-users");
+    }
   });
 });
 
@@ -1826,6 +2081,29 @@ if (claimTokenBtn) {
   });
 }
 
+if (shopBtn) {
+  shopBtn.addEventListener("click", openShopModal);
+}
+if (inventoryBtn) {
+  inventoryBtn.addEventListener("click", openInventoryModal);
+}
+if (closeShopBtn) {
+  closeShopBtn.addEventListener("click", closeShopModal);
+}
+if (closeInventoryBtn) {
+  closeInventoryBtn.addEventListener("click", closeInventoryModal);
+}
+if (shopModal) {
+  shopModal.addEventListener("click", (e) => {
+    if (e.target === shopModal) closeShopModal();
+  });
+}
+if (inventoryModal) {
+  inventoryModal.addEventListener("click", (e) => {
+    if (e.target === inventoryModal) closeInventoryModal();
+  });
+}
+
 if (nicknameBtn) {
   nicknameBtn.addEventListener("click", () => {
     const target = nicknameBtn.dataset.target;
@@ -1981,12 +2259,21 @@ function showAdminResult(msg, ok) {
   adminResultMsg._timer = setTimeout(() => adminResultMsg.classList.add("hidden"), 5000);
 }
 
+function requireAdminAction() {
+  if (isAdmin) return true;
+  showAdminResult("Admin access denied.", false);
+  return false;
+}
+
 if (openAdminPanelBtn) openAdminPanelBtn.addEventListener("click", openAdminPanel);
 if (closeAdminPanelBtn) closeAdminPanelBtn.addEventListener("click", closeAdminPanel);
 if (adminPanelModal) adminPanelModal.addEventListener("click", (e) => { if (e.target === adminPanelModal) closeAdminPanel(); });
 
 document.querySelectorAll(".tab[data-admintab]").forEach((tab) => {
-  tab.addEventListener("click", () => showAdminTab(tab.dataset.admintab));
+  tab.addEventListener("click", () => {
+    if (!requireAdminAction()) return;
+    showAdminTab(tab.dataset.admintab);
+  });
 });
 
 function refreshAdminTargetDatalist() {
@@ -2022,6 +2309,7 @@ if (adminBanType) {
 
 if (adminGiveBtn) {
   adminGiveBtn.addEventListener("click", () => {
+    if (!requireAdminAction()) return;
     const handle = adminTokenHandle ? adminTokenHandle.value.trim() : "";
     const amount = adminTokenAmount ? parseInt(adminTokenAmount.value) || 0 : 0;
     if (!handle || amount <= 0) { showAdminResult("Enter a handle and positive amount.", false); return; }
@@ -2032,6 +2320,7 @@ if (adminGiveBtn) {
 
 if (adminTakeBtn) {
   adminTakeBtn.addEventListener("click", () => {
+    if (!requireAdminAction()) return;
     const handle = adminTokenHandle ? adminTokenHandle.value.trim() : "";
     const amount = adminTokenAmount ? parseInt(adminTokenAmount.value) || 0 : 0;
     if (!handle || amount <= 0) { showAdminResult("Enter a handle and positive amount.", false); return; }
@@ -2043,6 +2332,7 @@ if (adminTakeBtn) {
 
 if (adminBanBtn) {
   adminBanBtn.addEventListener("click", () => {
+    if (!requireAdminAction()) return;
     const handle = adminBanHandle ? adminBanHandle.value.trim() : "";
     const type   = adminBanType ? adminBanType.value : "perm";
     const dur    = adminBanDuration ? adminBanDuration.value : "1";
@@ -2058,6 +2348,7 @@ if (adminBanBtn) {
 
 if (adminUnbanBtn) {
   adminUnbanBtn.addEventListener("click", () => {
+    if (!requireAdminAction()) return;
     const handle = adminBanHandle ? adminBanHandle.value.trim() : "";
     if (!handle) { showAdminResult("Enter the handle to unban.", false); return; }
     if (!socket) return;
@@ -2067,6 +2358,7 @@ if (adminUnbanBtn) {
 
 if (adminDelGroupBtn) {
   adminDelGroupBtn.addEventListener("click", () => {
+    if (!requireAdminAction()) return;
     const name = adminDelGroupInput ? adminDelGroupInput.value.trim() : "";
     if (!name) { showAdminResult("Enter a group name.", false); return; }
     if (!confirm(`Permanently delete the group #${name} and all its messages?`)) return;
@@ -2214,6 +2506,7 @@ const adminTitleSelect = document.getElementById("admin-title-select");
 const adminSetTitleBtn = document.getElementById("admin-set-title-btn");
 if (adminSetTitleBtn) {
   adminSetTitleBtn.addEventListener("click", () => {
+    if (!requireAdminAction()) return;
     const handle = adminTitleHandle ? adminTitleHandle.value.trim() : "";
     const title  = adminTitleSelect ? adminTitleSelect.value : "none";
     if (!handle || !socket) return;
@@ -2247,6 +2540,7 @@ function renderAdminMessages(channelId, messages) {
 
 if (adminMsgLoadBtn && adminMsgChannelInput) {
   const doAdminLoad = () => {
+    if (!requireAdminAction()) return;
     const cid = adminMsgChannelInput.value.trim();
     if (!cid || !socket) return;
     socket.emit("admin-view-channel", { channelId: cid });

@@ -496,6 +496,8 @@ function clearMissedMentions(username) {
 const VALID_TITLES = [
   "new", "verified", "dev", "mod", "staff", "pro", "vip", "og", "elite", "founder", "legend", "admin", "creator",
   "champion", "sage", "mythic", "guardian", "pioneer", "titan", "oracle", "nova",
+  "scout", "villager", "traveler", "rookie", "thinker", "helper", "buddy", "chatter", "sprout", "breeze", "emberling", "moonkid",
+  "ranger", "artisan", "scholar", "tactician", "envoy", "sentinel", "pathfinder", "trailblazer", "whisper", "voyager", "striker", "strategist", "alchemist", "warden",
 ];
 
 function getTitle(handle) {
@@ -510,6 +512,61 @@ function setTitle(handle, title) {
     data.titles[uk(handle)] = title;
   }
   scheduleSave();
+}
+
+// ── Gradient themes + Daily Shop ────────────────────────────────────────────
+function getOwnedGradientThemes(username) {
+  return data.users[uk(username)]?.ownedGradientThemes || [];
+}
+
+function addOwnedGradientTheme(username, themeKey) {
+  const key = uk(username);
+  if (!data.users[key]) data.users[key] = {};
+  if (!data.users[key].ownedGradientThemes) data.users[key].ownedGradientThemes = [];
+  const t = String(themeKey || "").trim().toLowerCase();
+  if (!t) return;
+  if (!data.users[key].ownedGradientThemes.includes(t)) {
+    data.users[key].ownedGradientThemes.push(t);
+    scheduleSave();
+  }
+}
+
+function getActiveGradientTheme(username) {
+  return data.users[uk(username)]?.activeGradientTheme || null;
+}
+
+function setActiveGradientTheme(username, themeKey) {
+  const key = uk(username);
+  if (!data.users[key]) data.users[key] = {};
+  data.users[key].activeGradientTheme = themeKey ? String(themeKey).trim().toLowerCase() : null;
+  scheduleSave();
+}
+
+function getDailyShop(username) {
+  return data.users[uk(username)]?.dailyShop || null;
+}
+
+function setDailyShop(username, shopData) {
+  const key = uk(username);
+  if (!data.users[key]) data.users[key] = {};
+  data.users[key].dailyShop = shopData || null;
+  scheduleSave();
+}
+
+function getOwnedTitles(username) {
+  return data.users[uk(username)]?.ownedTitles || [];
+}
+
+function addOwnedTitle(username, titleKey) {
+  const key = uk(username);
+  if (!data.users[key]) data.users[key] = {};
+  if (!data.users[key].ownedTitles) data.users[key].ownedTitles = [];
+  const t = String(titleKey || "").trim().toLowerCase();
+  if (!t) return;
+  if (!data.users[key].ownedTitles.includes(t)) {
+    data.users[key].ownedTitles.push(t);
+    scheduleSave();
+  }
 }
 
 load();
@@ -589,4 +646,13 @@ module.exports = {
   getTitle,
   setTitle,
   VALID_TITLES,
+  // Gradient themes + shop
+  getOwnedGradientThemes,
+  addOwnedGradientTheme,
+  getActiveGradientTheme,
+  setActiveGradientTheme,
+  getDailyShop,
+  setDailyShop,
+  getOwnedTitles,
+  addOwnedTitle,
 };

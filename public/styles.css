@@ -800,6 +800,21 @@ button:active {
   background: var(--accent);
 }
 
+.msg.chat.msg-themed {
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.msg.chat.msg-themed .meta,
+.msg.chat.msg-themed .msg-author-name {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.msg.chat.msg-themed .msg-avatar-sm {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
 .msg.chat.dm .user-label {
   display: none;
 }
@@ -1026,6 +1041,103 @@ button:active {
 /* Admin Panel Modal */
 .admin-modal-card {
   max-width: 520px;
+}
+
+.shop-modal-card {
+  max-width: 520px;
+}
+
+.shop-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 0.55rem 0.6rem;
+}
+
+.shop-item-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.shop-item-sub {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.shop-pills {
+  margin-top: 0.28rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+}
+
+.shop-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.shop-pill.tag {
+  background: rgba(148, 163, 184, 0.25);
+  color: var(--text);
+}
+
+.shop-pill.rarity {
+  color: #fff;
+}
+
+.shop-pill.rarity-common { background: #475569; }
+.shop-pill.rarity-uncommon { background: #15803d; }
+.shop-pill.rarity-rare { background: #1d4ed8; }
+.shop-pill.rarity-epic { background: #7e22ce; }
+.shop-pill.rarity-legendary { background: #b45309; }
+
+.shop-owned-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.shop-theme-chip {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.28rem 0.62rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.shop-theme-chip.active {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.shop-result {
+  margin-top: 0.65rem;
+  font-size: 0.85rem;
+}
+
+.shop-result.ok {
+  color: var(--online);
+}
+
+.shop-result.fail {
+  color: var(--danger);
 }
 
 .admin-btn-row {
