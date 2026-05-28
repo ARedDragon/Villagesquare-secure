@@ -1477,6 +1477,19 @@ body.no-user-backdrop::before {
   min-width: 0;
 }
 
+.wager-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(250, 204, 21, 0.18);
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  color: #fde68a;
+}
+
 .msg.game-result {
   background: #1a2a1a;
   border: 1px solid #2d5a2d;
@@ -1755,9 +1768,19 @@ html[data-theme="light"] .msg.chat.mine .meta {
   animation: none;
 }
 
+.reaction-tap-btn.go-live {
+  background: #dc2626;
+  animation: reactPulseLive 0.33s ease-in-out infinite alternate;
+}
+
 @keyframes reactPulse {
   from { transform: scale(1); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.45); }
   to   { transform: scale(1.06); box-shadow: 0 0 0 12px rgba(22, 163, 74, 0); }
+}
+
+@keyframes reactPulseLive {
+  from { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55); }
+  to   { transform: scale(1.08); box-shadow: 0 0 0 15px rgba(220, 38, 38, 0); }
 }
 
 /* ── Math Duel ───────────────────────────────────────────────── */

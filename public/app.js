@@ -186,6 +186,21 @@ let wagerAmount = 0;
 let pendingNicknameTarget = null;
 let nicknames = JSON.parse(localStorage.getItem("villagesquare-nicknames") || "{}");
 
+const GAME_LABELS = {
+  rps: "Rock Paper Scissors",
+  dice: "Dice Duel",
+  coinflip: "Coin Flip",
+  numberduel: "Number Duel",
+  reaction: "Reaction Race",
+  mathduel: "Math Duel",
+  trivia: "Trivia Duel",
+  typerace: "Type Race",
+};
+
+function getGameLabel(game, fallback) {
+  return fallback || GAME_LABELS[game] || game || "Game";
+}
+
 function roomChannelId(room) {
   const r = (room || "general").trim().slice(0, 32) || "general";
   return "room:" + r;
@@ -920,12 +935,16 @@ function renderMessages(channelId) {
     if (msg.type === "game-challenge") {
       li.className = "msg game-challenge";
       const isChallenger = msg.user === myName;
+      const gameName = getGameLabel(msg.game, msg.gameName);
+      const wagerNote = msg.wagerAmount > 0
+        ? `<span class="wager-chip">🪙 ${escapeHtml(String(msg.wagerAmount))} each</span>`
+        : "";
       li.innerHTML =
         `<span class="meta">${formatTime(msg.time)}</span>` +
-        `<span class="game-challenge-text">🎮 <strong>${escapeHtml(msg.user)}</strong> challenged to <strong>${escapeHtml(msg.gameName || msg.game)}</strong></span>` +
+        `<span class="game-challenge-text">🎮 <strong>${escapeHtml(displayName(msg.user) || msg.user)}</strong> started <strong>${escapeHtml(gameName)}</strong> ${wagerNote}</span>` +
         (!isChallenger
           ? `<button type="button" class="accept-game-btn" data-gameid="${escapeAttr(msg.gameId)}">Accept</button>`
-          : `<span class="muted-small">Waiting for someone to accept…</span>`);
+          : `<span class="muted-small">Challenge sent. Waiting for opponent…</span>`);
     } else if (msg.type === "game-result") {
       li.className = "msg game-result";
       li.innerHTML =
@@ -963,7 +982,12 @@ function renderMessages(channelId) {
   }
 
   messagesEl.querySelectorAll(".accept-game-btn").forEach((btn) => {
-    btn.addEventListener("click", () => acceptGame(btn.dataset.gameid));
+    btn.addEventListener("click", () => {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.textContent = "Joining...";
+      acceptGame(btn.dataset.gameid);
+    });
   });
   messagesEl.querySelectorAll(".delete-msg-btn").forEach((btn) => {
     btn.addEventListener("click", () => deleteMessage(btn.dataset.msgid));
@@ -1311,6 +1335,7 @@ function closeNumduelModal() {
 
 function closeReactionModal() {
   if (reactionModal) reactionModal.classList.add("hidden");
+  if (reactionTapBtn) reactionTapBtn.classList.remove("go-live");
   reactionTapped = false;
   activeGameId = null;
 }
@@ -1724,6 +1749,8 @@ async function connect() {
 
   socket.on("game-started", ({ gameId, game, opponent, problem, question, options, phrase }) => {
     activeGameId = gameId;
+    const gameName = getGameLabel(game);
+    showToast(`🎮 ${escapeHtml(gameName)} vs ${escapeHtml(displayName(opponent) || opponent)} started`, 2200);
     if (game === "numberduel") {
       numduelOpponentLabel.textContent = "vs " + opponent;
       numduelStatus.textContent = "Pick a number 1–10!";
@@ -1732,7 +1759,11 @@ async function connect() {
     } else if (game === "reaction") {
       if (reactionOpponentLabel) reactionOpponentLabel.textContent = "vs " + opponent;
       if (reactionStatus) reactionStatus.textContent = "Get ready… tap the instant you see GO!";
-      if (reactionTapBtn) { reactionTapBtn.classList.add("hidden"); reactionTapBtn.disabled = false; }
+      if (reactionTapBtn) {
+        reactionTapBtn.classList.add("hidden");
+        reactionTapBtn.classList.remove("go-live");
+        reactionTapBtn.disabled = false;
+      }
       reactionTapped = false;
       if (reactionModal) reactionModal.classList.remove("hidden");
     } else if (game === "mathduel") {
@@ -1778,9 +1809,9 @@ async function connect() {
       if (reactionStatus) reactionStatus.textContent = "Tapped! Waiting for opponent…";
       if (reactionTapBtn) reactionTapBtn.disabled = true;
     } else if (mathduelModal && !mathduelModal.classList.contains("hidden")) {
-      if (mathduelStatus) mathduelStatus.textContent = "Answer submitted! Waiting for opponent…";
-      if (mathduelInput) mathduelInput.disabled = true;
-      if (mathduelSubmitBtn) mathduelSubmitBtn.disabled = true;
+      if (mathduelStatus) mathduelStatus.textContent = "Keep solving... first correct answer wins!";
+      if (mathduelInput) mathduelInput.disabled = false;
+      if (mathduelSubmitBtn) mathduelSubmitBtn.disabled = false;
     } else if (triviaModal && !triviaModal.classList.contains("hidden")) {
       if (triviaStatus) triviaStatus.textContent = "Answer submitted! Waiting for opponent…";
       triviaOptBtns().forEach((b) => (b.disabled = true));
@@ -1799,6 +1830,7 @@ async function connect() {
 
   socket.on("game-result", ({ gameId }) => {
     if (activeGameId === gameId) {
+      showToast("🏁 Game finished", 1800);
       closeRpsModal();
       closeNumduelModal();
       closeReactionModal();
@@ -1809,13 +1841,17 @@ async function connect() {
   });
 
   socket.on("game-error", ({ message }) => {
-    alert(message);
+    showToast("❌ " + escapeHtml(message || "Game action failed."), 2600);
   });
 
   socket.on("game-go", ({ gameId }) => {
     if (activeGameId !== gameId) return;
     if (reactionStatus) reactionStatus.textContent = "TAP NOW! ⚡";
-    if (reactionTapBtn) { reactionTapBtn.classList.remove("hidden"); reactionTapBtn.disabled = false; }
+    if (reactionTapBtn) {
+      reactionTapBtn.classList.remove("hidden");
+      reactionTapBtn.classList.add("go-live");
+      reactionTapBtn.disabled = false;
+    }
   });
 
   socket.on("game-wrong-answer", ({ gameId, message }) => {
@@ -2130,8 +2166,7 @@ if (reactionTapBtn) {
 function submitMathduel() {
   const answer = mathduelInput ? mathduelInput.value.trim() : "";
   if (!answer || !activeGameId || !socket) return;
-  if (mathduelInput) mathduelInput.disabled = false;
-  if (mathduelSubmitBtn) mathduelSubmitBtn.disabled = false;
+  if (mathduelStatus) mathduelStatus.textContent = "Submitted...";
   socket.emit("game-move", { gameId: activeGameId, move: answer });
 }
 if (mathduelSubmitBtn) mathduelSubmitBtn.addEventListener("click", submitMathduel);
@@ -2161,9 +2196,7 @@ triviaOptBtns().forEach((btn) => {
 function submitTyperace() {
   const typed = typeraceInput ? typeraceInput.value : "";
   if (!typed || !activeGameId || !socket) return;
-  if (typeraceInput) typeraceInput.disabled = false;
-  if (typeraceSubmitBtn) typeraceSubmitBtn.disabled = false;
-  if (typeraceFeedback) typeraceFeedback.textContent = "";
+  if (typeraceFeedback) typeraceFeedback.textContent = "Submitted...";
   socket.emit("game-move", { gameId: activeGameId, move: typed });
 }
 if (typeraceSubmitBtn) typeraceSubmitBtn.addEventListener("click", submitTyperace);
