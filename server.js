@@ -75,7 +75,15 @@ function getOnlineUsers() {
   for (const handle of socketsByUser.values()) handles.add(handle);
   return [...handles]
     .sort((a, b) => a.localeCompare(b))
-    .map((handle) => ({ handle, displayName: store.getDisplayName(handle) || handle, title: store.getTitle(handle) }));
+    .map((handle) => {
+      const title = store.getTitle(handle);
+      return {
+        handle,
+        displayName: store.getDisplayName(handle) || handle,
+        title,
+        titleMeta: titleMetaFor(title),
+      };
+    });
 }
 
 function userRoom(name) {
@@ -99,6 +107,42 @@ function getLocalIPs() {
 
 // Permanently privileged handle — can see all groups and peek any channel history
 const ADMIN_HANDLE = "jaydenlian";
+
+// Authoritative title metadata (labels + gradients)
+const TITLE_META = {
+  new:       { label: "NEW",      cls: "title-new",       gradient: "#3b82f6", textColor: "#fff" },
+  verified:  { label: "✓",        cls: "title-verified",  gradient: "#22c55e", textColor: "#fff" },
+  dev:       { label: "DEV",      cls: "title-dev",       gradient: "#a855f7", textColor: "#fff" },
+  mod:       { label: "MOD",      cls: "title-mod",       gradient: "#06b6d4", textColor: "#fff" },
+  staff:     { label: "STAFF",    cls: "title-staff",     gradient: "#6366f1", textColor: "#fff" },
+  pro:       { label: "PRO",      cls: "title-pro",       gradient: "#64748b", textColor: "#fff" },
+  vip:       { label: "VIP",      cls: "title-vip",       gradient: "#ec4899", textColor: "#fff" },
+  og:        { label: "OG",       cls: "title-og",        gradient: "#d97706", textColor: "#fff" },
+  elite:     { label: "ELITE",    cls: "title-elite",     gradient: "#7c3aed", textColor: "#fff" },
+  founder:   { label: "FOUNDER",  cls: "title-founder",   gradient: "#10b981", textColor: "#fff" },
+  legend:    { label: "LEGEND",   cls: "title-legend",    gradient: "linear-gradient(90deg, #f59e0b, #ec4899, #8b5cf6)", textColor: "#fff" },
+  admin:     { label: "ADMIN",    cls: "title-admin",     gradient: "linear-gradient(90deg, #ef4444, #b91c1c)", textColor: "#fff" },
+  creator:   { label: "★",        cls: "title-creator",   gradient: "linear-gradient(90deg, #f59e0b, #ef4444)", textColor: "#fff" },
+  champion:  { label: "CHAMP",    cls: "title-champion",  gradient: "linear-gradient(90deg, #16a34a, #84cc16)", textColor: "#fff" },
+  sage:      { label: "SAGE",     cls: "title-sage",      gradient: "linear-gradient(90deg, #0ea5e9, #22d3ee)", textColor: "#fff" },
+  mythic:    { label: "MYTHIC",   cls: "title-mythic",    gradient: "linear-gradient(90deg, #7c3aed, #ec4899)", textColor: "#fff" },
+  guardian:  { label: "GUARD",    cls: "title-guardian",  gradient: "linear-gradient(90deg, #0f766e, #14b8a6)", textColor: "#fff" },
+  pioneer:   { label: "PIONEER",  cls: "title-pioneer",   gradient: "linear-gradient(90deg, #b45309, #f59e0b)", textColor: "#fff" },
+  titan:     { label: "TITAN",    cls: "title-titan",     gradient: "linear-gradient(90deg, #334155, #0f172a)", textColor: "#fff" },
+  oracle:    { label: "ORACLE",   cls: "title-oracle",    gradient: "linear-gradient(90deg, #4338ca, #06b6d4)", textColor: "#fff" },
+  nova:      { label: "NOVA",     cls: "title-nova",      gradient: "linear-gradient(90deg, #f97316, #f43f5e)", textColor: "#fff" },
+};
+
+function titleMetaFor(title) {
+  return title && TITLE_META[title] ? TITLE_META[title] : null;
+}
+
+function hydrateMessagesWithTitleMeta(messages) {
+  return (messages || []).map((m) => {
+    const t = m.title || (m.user ? store.getTitle(m.user) : null) || null;
+    return { ...m, title: t, titleMeta: titleMetaFor(t) };
+  });
+}
 
 function makeGameId() {
   return `game-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -391,6 +435,7 @@ io.on("connection", (socket) => {
       isAdmin: adminUser,
       missedMentions: store.getMissedMentions(name),
       title: store.getTitle(name),
+      titleMeta: titleMetaFor(store.getTitle(name)),
     });
     store.clearMissedMentions(name);
     io.emit("online-users", getOnlineUsers());
@@ -402,7 +447,7 @@ io.on("connection", (socket) => {
     if (!channelId) return;
     socket.emit("channel-history", {
       channelId,
-      messages: store.getMessages(channelId),
+      messages: hydrateMessagesWithTitleMeta(store.getMessages(channelId)),
       label: channelLabel(channelId, socket.username),
     });
   });
@@ -489,7 +534,7 @@ io.on("connection", (socket) => {
     store.setTitle(handle, t);
     // Notify the target user if online
     const targetSockets = [...io.sockets.sockets.values()].filter((s) => s.username === handle);
-    for (const ts of targetSockets) ts.emit("title-updated", { title: t });
+    for (const ts of targetSockets) ts.emit("title-updated", { title: t, titleMeta: titleMetaFor(t) });
     io.emit("online-users", getOnlineUsers()); // refresh online list with new title
     socket.emit("admin-action-result", { ok: true, message: `Title ${t ? `"${t}"` : "removed"} for ${handle}.` });
   });
@@ -503,6 +548,7 @@ io.on("connection", (socket) => {
       displayName: store.getDisplayName(u.handle || u.username || u),
       tokens: store.getTokens(u.handle || u.username || u),
       title: store.getTitle(u.handle || u.username || u),
+      titleMeta: titleMetaFor(store.getTitle(u.handle || u.username || u)),
     })));
   });
 
@@ -746,7 +792,7 @@ io.on("connection", (socket) => {
     if (withHistory) {
       socket.emit("channel-history", {
         channelId,
-        messages: store.getMessages(channelId),
+        messages: hydrateMessagesWithTitleMeta(store.getMessages(channelId)),
         label: channelLabel(channelId, socket.username),
       });
     }
@@ -774,6 +820,7 @@ io.on("connection", (socket) => {
       user: socket.username,
       displayName: socket.displayName || socket.username,
       title: store.getTitle(socket.username),
+      titleMeta: titleMetaFor(store.getTitle(socket.username)),
       text: body,
       time: new Date().toISOString(),
     };

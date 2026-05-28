@@ -134,6 +134,7 @@ let syncTimer = null;
 let blockedUsers = new Set();
 let ignoredUsers = new Set(JSON.parse(localStorage.getItem("villagesquare-ignored") || "[]"));
 let userTitles = {}; // handle.lower() -> title string
+let userTitleMeta = {}; // handle.lower() -> server-provided title meta
 let filterEnabled = localStorage.getItem("villagesquare-filter") !== "off"; // on by default
 let activeGameId = null;
 let pendingPasscodeGroupName = null;
@@ -309,11 +310,24 @@ const TITLE_META = {
   legend:  { label: "LEGEND",  cls: "title-legend" },
   admin:   { label: "ADMIN",   cls: "title-admin" },
   creator: { label: "★",       cls: "title-creator" },
+  champion:{ label: "CHAMP",   cls: "title-champion" },
+  sage:    { label: "SAGE",    cls: "title-sage" },
+  mythic:  { label: "MYTHIC",  cls: "title-mythic" },
+  guardian:{ label: "GUARD",   cls: "title-guardian" },
+  pioneer: { label: "PIONEER", cls: "title-pioneer" },
+  titan:   { label: "TITAN",   cls: "title-titan" },
+  oracle:  { label: "ORACLE",  cls: "title-oracle" },
+  nova:    { label: "NOVA",    cls: "title-nova" },
 };
-function titleBadgeHtml(title) {
-  const m = title && TITLE_META[title];
+function titleBadgeHtml(title, titleMeta) {
+  const m = titleMeta || (title && TITLE_META[title]);
   if (!m) return "";
-  return `<span class="title-badge ${m.cls}">${m.label}</span>`;
+  const cls = m.cls || (title && TITLE_META[title] ? TITLE_META[title].cls : "");
+  const label = m.label || (title && TITLE_META[title] ? TITLE_META[title].label : String(title || "").toUpperCase());
+  const style = m.gradient
+    ? ` style="background:${escapeAttr(m.gradient)};color:${escapeAttr(m.textColor || "#fff")}"`
+    : "";
+  return `<span class="title-badge ${cls}"${style}>${escapeHtml(label)}</span>`;
 }
 
 function renderChatList() {
@@ -389,6 +403,7 @@ function renderOnlineList() {
     const isPending = sentFriendRequests.some((n2) => n2.toLowerCase() === handle.toLowerCase());
     const hasIncoming = friendRequests.some((n2) => n2.toLowerCase() === handle.toLowerCase());
     const uTitle = u.title || userTitles[handle.toLowerCase()] || null;
+    const uTitleMeta = u.titleMeta || userTitleMeta[handle.toLowerCase()] || null;
 
     const li = document.createElement("li");
     li.className = "online-item-row";
@@ -399,7 +414,7 @@ function renderOnlineList() {
     msgBtn.innerHTML =
       (isBlocked ? `<span class="dot"></span><span>🚫 ${escapeHtml(displayName(handle))}</span>` :
        isIgnored ? `<span class="dot"></span><span>🔕 ${escapeHtml(displayName(handle))}</span>` :
-       `<span class="dot"></span>${titleBadgeHtml(uTitle)}<span>${escapeHtml(displayName(handle))}</span>`);
+      `<span class="dot"></span>${titleBadgeHtml(uTitle, uTitleMeta)}<span>${escapeHtml(displayName(handle))}</span>`);
     // Double-click to ignore (single click = DM as usual for non-blocked/ignored)
     if (!isBlocked && !isIgnored) {
       let _clickCount = 0, _clickTimer = null;
@@ -670,14 +685,18 @@ function renderMessages(channelId) {
     } else {
       const isMine = msg.user === myName;
       const msgTitle = msg.title || userTitles[msg.user.toLowerCase()] || null;
+      const msgTitleMeta = msg.titleMeta || userTitleMeta[msg.user.toLowerCase()] || null;
       li.className = "msg chat" + (isMine ? " mine" : "") + (isDm ? " dm" : "") + (isMine && msgTitle ? ` mine-${msgTitle}` : "");
       const senderLabel = msg.displayName || displayName(msg.user);
       const initial = senderLabel.charAt(0).toUpperCase();
       const filteredText = applyFilter(msg.text);
+      const avatarStyle = msgTitleMeta && msgTitleMeta.gradient
+        ? ` style="background:${escapeAttr(msgTitleMeta.gradient)}"`
+        : "";
       li.innerHTML =
         `<div class="msg-author-row">` +
-          `<span class="msg-avatar-sm${msgTitle ? ` avatar-${msgTitle}` : ""}">${escapeHtml(initial)}</span>` +
-          titleBadgeHtml(msgTitle) +
+          `<span class="msg-avatar-sm${msgTitle ? ` avatar-${msgTitle}` : ""}"${avatarStyle}>${escapeHtml(initial)}</span>` +
+          titleBadgeHtml(msgTitle, msgTitleMeta) +
           `<span class="msg-author-name">${escapeHtml(senderLabel)}</span>` +
           `<span class="meta">${formatTime(msg.time)}</span>` +
         `</div>` +
@@ -1220,13 +1239,14 @@ async function connect() {
     // Don't disconnect — let user re-submit with their PIN
   });
 
-  socket.on("registered", ({ handle, username, displayName: dn, chats: serverChats, groups, blocked, friends, friendRequests: friendReqs, sentRequests, friendsWithNames, tokens, nextTokenAt: nat, isAdmin: adminFlag, missedMentions, title }) => {
+  socket.on("registered", ({ handle, username, displayName: dn, chats: serverChats, groups, blocked, friends, friendRequests: friendReqs, sentRequests, friendsWithNames, tokens, nextTokenAt: nat, isAdmin: adminFlag, missedMentions, title, titleMeta }) => {
     myName = handle || username;
     myDisplayName = dn || myName;
     isAdmin = !!adminFlag;
     myNameLabel.textContent = myDisplayName;
     if (myHandleLabel) myHandleLabel.textContent = "@" + myName;
     if (title) userTitles[myName.toLowerCase()] = title;
+    if (titleMeta) userTitleMeta[myName.toLowerCase()] = titleMeta;
     knownGroups = groups || [];
     blockedUsers = new Set(blocked || []);
     myFriends = friends || [];
@@ -1279,6 +1299,8 @@ async function connect() {
       const h = (u.handle || u).toLowerCase();
       if (u.title) userTitles[h] = u.title;
       else if (userTitles[h] && !u.title) delete userTitles[h];
+      if (u.titleMeta) userTitleMeta[h] = u.titleMeta;
+      else if (userTitleMeta[h] && !u.titleMeta) delete userTitleMeta[h];
     }
     renderOnlineList();
     renderFriendsList();
@@ -1539,8 +1561,9 @@ async function connect() {
     setTimeout(() => { messageInput.disabled = false; messageInput.focus(); }, cooldownMs || 3000);
   });
 
-  socket.on("title-updated", ({ title }) => {
+  socket.on("title-updated", ({ title, titleMeta }) => {
     if (myName) userTitles[myName.toLowerCase()] = title || null;
+    if (myName) userTitleMeta[myName.toLowerCase()] = titleMeta || null;
     if (activeChannelId) renderMessages(activeChannelId);
   });
 

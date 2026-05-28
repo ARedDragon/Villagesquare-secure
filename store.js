@@ -493,7 +493,10 @@ function clearMissedMentions(username) {
 }
 
 // ── User Titles ──────────────────────────────────────────────────────────────
-const VALID_TITLES = ["new", "verified", "dev", "mod", "staff", "pro", "vip", "og", "elite", "founder", "legend", "admin", "creator"];
+const VALID_TITLES = [
+  "new", "verified", "dev", "mod", "staff", "pro", "vip", "og", "elite", "founder", "legend", "admin", "creator",
+  "champion", "sage", "mythic", "guardian", "pioneer", "titan", "oracle", "nova",
+];
 
 function getTitle(handle) {
   return data.titles?.[uk(handle)] || null;
