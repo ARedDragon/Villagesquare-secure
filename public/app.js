@@ -1210,6 +1210,13 @@ const _BAD_WORDS = [
   "bastard","damn","hell","crap","piss","asshole","motherfucker","bullshit",
   "wanker","twat","prick","arse","bollocks","tosser",
 ];
+const _FILTER_WHITELIST = [
+  "hello",
+  "shell",
+  "shells",
+  "shelling",
+  "shelled",
+];
 const _BAD_WORDS_NORM = _BAD_WORDS.map((w) => w.toLowerCase());
 const _FILTER_LEET_MAP = {
   "0": "o",
@@ -1226,6 +1233,25 @@ const _FILTER_LEET_MAP = {
 function normalizeFilterChar(ch) {
   const lower = ch.toLowerCase();
   return _FILTER_LEET_MAP[lower] || lower;
+}
+
+function normalizeFilterWord(word) {
+  let out = "";
+  for (const ch of String(word || "")) {
+    if (!/[a-z0-9]/i.test(ch)) continue;
+    out += normalizeFilterChar(ch);
+  }
+  return out;
+}
+
+const _FILTER_WHITELIST_NORM = new Set(_FILTER_WHITELIST.map((w) => normalizeFilterWord(w)));
+
+function getWordBounds(text, from, to) {
+  let start = from;
+  let end = to;
+  while (start > 0 && /[a-z0-9]/i.test(text[start - 1])) start -= 1;
+  while (end + 1 < text.length && /[a-z0-9]/i.test(text[end + 1])) end += 1;
+  return [start, end];
 }
 
 function findFilterRanges(text) {
@@ -1259,7 +1285,13 @@ function findFilterRanges(text) {
       if (!isShortWord || boundaryOk) {
         const from = indexMap[idx];
         const to = indexMap[idx + badWord.length - 1];
-        if (typeof from === "number" && typeof to === "number") ranges.push([from, to]);
+        if (typeof from === "number" && typeof to === "number") {
+          const [wordStart, wordEnd] = getWordBounds(text, from, to);
+          const tokenNorm = normalizeFilterWord(text.slice(wordStart, wordEnd + 1));
+          if (!_FILTER_WHITELIST_NORM.has(tokenNorm)) {
+            ranges.push([from, to]);
+          }
+        }
       }
 
       start = idx + 1;
